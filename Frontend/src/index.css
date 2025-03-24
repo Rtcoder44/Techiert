@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+
+
+/* 🌟 Global styles for consistent design */
+body {
+  @apply bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+  font-family: 'Inter', sans-serif;
+}
+
+/* 🌟 Custom scrollbar (Optional) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* 🌟 Smooth transitions for UI */
+* {
+  @apply transition-all duration-200;
+}
