@@ -1,22 +1,36 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/authContext"; // Import useAuth
 import Signup from "./pages/signup.page";
 import Login from "./pages/login.page";
 import ForgotPasswordPage from "./pages/forgotPassword.page";
 import ResetPasswordPage from "./pages/resetPassword.page";
 import DashboardPage from "./pages/dashboard.page";
+import CreatePostPage from "./pages/createPostPage";
 import "./index.css";
-import CreatePost from "./pages/createPost";
 
 function App() {
+  const { user, loading } = useAuth(); // Get user data from context
+
+  if (loading) {
+    return <div>Loading...</div>; // Show loading while fetching user data
+  }
+
   return (
     <Router>
       <Routes>
+        {/* ✅ Restrict Signup and Login if user is already logged in */}
+        <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" replace />} />
+
         {/* ✅ Authentication Routes */}
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-        <Route path="/dashboard/create-post" element={<CreatePost/>}/>
+
+        {/* ✅ Protected Route: Only Admins Can Access Create Post */}
+        <Route 
+          path="/dashboard/create-post" 
+          element={user?.role === "admin" ? <CreatePostPage /> : <Navigate to="/dashboard" replace />}
+        />
 
         {/* ✅ Dashboard Route */}
         <Route path="/dashboard" element={<DashboardPage />} />
