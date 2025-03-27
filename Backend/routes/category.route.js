@@ -1,15 +1,15 @@
 const express = require("express");
-const { authMiddleware } = require("../middlewares/auth.middleware");
+const { authMiddleware, adminMiddleware } = require("../middlewares/auth.middleware");
 const categoryController = require("../controllers/category.controller");
 
 const router = express.Router();
 
-// Public Routes
+// 📌 Public Routes
 router.get("/", categoryController.getAllCategories);
 
-// Protected Routes (Only Admins can create, update, delete)
-router.post("/", authMiddleware, categoryController.createCategory);
-router.put("/:id", authMiddleware, categoryController.updateCategory);
-router.delete("/:id", authMiddleware, categoryController.deleteCategory);
+// 📌 Admin-Only Routes
+router.post("/", authMiddleware, adminMiddleware, categoryController.createCategory);
+router.put("/:id", authMiddleware, adminMiddleware, categoryController.updateCategory);
+router.delete("/:id", authMiddleware, adminMiddleware, categoryController.deleteCategory);
 
 module.exports = router;

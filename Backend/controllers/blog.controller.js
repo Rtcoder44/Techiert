@@ -4,28 +4,29 @@ const Comment = require("../models/comments.model");
 const slugify = require("slugify");
 
 // Create a new blog post (Admin & Author Only)
+// Create a new blog post (Admin & Author Only)
 exports.createBlog = async (req, res) => {
     try {
         if (!req.user) {
             return res.status(401).json({ error: "Unauthorized. Please log in to create a blog." });
         }
 
-        const { title, category, content } = req.body;
+        const { title, category, content, status = "published" } = req.body; // Default status = "published"
         if (!title || !category || !content) {
             return res.status(400).json({ error: "All fields (title, category, content) are required." });
         }
 
         const slug = slugify(title, { lower: true });
-        
+
         const newBlog = new Blog({
             title,
             category,
             content,
             slug,
             author: req.user._id,
+            status // Now supports both "draft" & "published"
         });
 
-        // Handle File Upload (if image exists)
         if (req.file) {
             newBlog.coverImage = `/uploads/${req.file.filename}`;
         }
@@ -39,6 +40,7 @@ exports.createBlog = async (req, res) => {
         res.status(500).json({ error: "Internal server error. Please try again later." });
     }
 };
+
 
 // Get all blogs
 exports.getAllBlogs = async (req, res) => {
@@ -167,23 +169,58 @@ exports.likeBlog = async (req, res) => {
 };
 
 // Save or Update Draft
+// Save or Update Draft (Can later be published)
 exports.saveDraft = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, content, category, tags, coverImage } = req.body;
+        const { title, content, category, tags, coverImage, status = "draft" } = req.body; 
         const author = req.user.id;
 
-        const blogData = { title, content, category, tags, coverImage, author, status: "draft", updatedAt: Date.now() };
+        const draftData = { 
+            title, 
+            content, 
+            category, 
+            tags, 
+            coverImage, 
+            author, 
+            status, 
+            updatedAt: Date.now() 
+        };
 
-        const blog = id
-            ? await Blog.findOneAndUpdate({ _id: id, author, status: "draft" }, blogData, { new: true, upsert: true })
-            : await new Blog(blogData).save();
+        const draft = id
+            ? await Blog.findOneAndUpdate({ _id: id, author }, draftData, { new: true, upsert: true })
+            : await new Blog(draftData).save();
 
-        res.status(200).json({ message: "Draft saved", blog });
+        res.status(200).json({ message: `Blog ${status === "published" ? "published" : "draft saved"}`, draft });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
+// Publish a Draft
+exports.publishDraft = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const blog = await Blog.findOne({ _id: id, status: "draft" });
+
+        if (!blog) return res.status(404).json({ error: "Draft not found" });
+
+        if (req.user.role !== "admin" && req.user._id.toString() !== blog.author.toString()) {
+            return res.status(403).json({ error: "You can only publish your own drafts" });
+        }
+
+        blog.status = "published";
+        blog.updatedAt = Date.now();
+        await blog.save();
+
+        res.status(200).json({ message: "Draft published successfully", blog });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 // Get latest draft
 exports.getLatestDraft = async (req, res) => {
@@ -197,6 +234,17 @@ exports.getLatestDraft = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+exports.getAllDrafts = async (req, res) => {
+    try {
+        const drafts = await Blog.find({ status: "draft" }).populate("author", "name email");
+        res.status(200).json(drafts);
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
 
 
 exports.commentOnBlog = async (req, res) => {

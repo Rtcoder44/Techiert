@@ -45,11 +45,12 @@ const blogSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    status: {
-        type: String,
-        enum: ["published", "draft"],
-        default: "draft"
+    status: { 
+        type: String, 
+        enum: ["private", "published"], 
+        default: "private" 
     },
+
     metaTitle: {
         type: String,
         required: true
