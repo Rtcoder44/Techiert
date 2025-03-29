@@ -3,6 +3,7 @@ import axios from "axios";
 import { useAuth } from "../../context/authContext"; // ✅ Import Auth Context
 
 const PublishControls = ({ 
+  postId, // ✅ This will store the draft ID if updating
   postTitle, editorContent, metaTitle, metaDescription, category, tags, coverImage, 
   postStatus, setPostStatus, onPublish 
 }) => {
@@ -12,8 +13,8 @@ const PublishControls = ({
   const handlePublish = async () => {
     console.log("📤 coverImage before sending:", coverImage);
     
-    if (!postTitle || !editorContent || !metaTitle || !metaDescription || category.length === 0) {
-        alert("⚠️ Please fill in all required fields before publishing.");
+    if (!postTitle || !editorContent) {
+        alert("⚠️ Title and content are required.");
         return;
     }
 
@@ -26,37 +27,48 @@ const PublishControls = ({
         setPublishing(true);
 
         if (!coverImage) {
-            alert("⚠️ Please upload a cover image before publishing.");
+            alert("⚠️ Please upload a cover image.");
             setPublishing(false);
             return;
         }
 
         console.log("✅ Cover Image is set:", coverImage);
 
+        // Convert tags (names) to ObjectIds if necessary
+        const formattedTags = Array.isArray(tags) ? tags.map(tag => tag._id || tag) : [];
+
         const blogData = {
             title: postTitle,
             content: editorContent,
-            coverImage, // ✅ Directly passing coverImage URL
+            coverImage,
             category,
-            tags,
+            tags: formattedTags, // ✅ Now sending correct format
             metaTitle,
             metaDescription,
-            status: postStatus,
+            status: postStatus, // ✅ Draft or Published
             author: user._id,
         };
 
         console.log("📤 Final blogData before sending:", JSON.stringify(blogData, null, 2));
 
-        const response = await axios.post(
-            "http://localhost:5000/api/blogs",
-            blogData,
-            { headers: { "Content-Type": "application/json" }, withCredentials: true }
-        );
+        // 📌 Determine the correct API endpoint
+        let apiUrl = "http://localhost:5000/api/blogs"; // Default for publishing
+
+        if (postStatus === "draft") {
+            apiUrl = postId 
+                ? `http://localhost:5000/api/blogs/drafts/${postId}` // ✅ Updating existing draft
+                : "http://localhost:5000/api/blogs/drafts"; // ✅ Creating a new draft
+        }
+
+        const response = await axios.post(apiUrl, blogData, {
+            headers: { "Content-Type": "application/json" },
+            withCredentials: true
+        });
 
         console.log("✅ Server Response:", response.data);
 
         if (response.status === 201 || response.status === 200) {
-            alert("✅ Post Published Successfully!");
+            alert(`✅ Post ${postStatus} successfully!`);
             onPublish(response.data);
         } else {
             throw new Error("Unexpected response from the server.");
@@ -68,8 +80,6 @@ const PublishControls = ({
         setPublishing(false);
     }
 };
-
-
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-md">

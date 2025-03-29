@@ -11,34 +11,28 @@ exports.createBlog = async (req, res) => {
         console.log("📌 req.user:", req.user);
         console.log("📤 req.body:", req.body);
 
-        // ✅ Ensure the user is logged in
         if (!req.user || !req.user._id) {
             return res.status(401).json({ error: "Unauthorized. Please log in to create a blog." });
         }
 
         let { title, category, content, status = "published", metaTitle, metaDescription, coverImage, tags } = req.body;
 
-        // ✅ Validate required fields
         if (!title || !category || !content || !metaTitle || !metaDescription) {
             return res.status(400).json({ error: "All fields are required." });
         }
 
-        // ✅ Convert category to array if it is a single string
         if (typeof category === "string") category = [category];
 
-        // ✅ Ensure category is an array of valid MongoDB ObjectIds
         if (!Array.isArray(category) || !category.every(cat => mongoose.Types.ObjectId.isValid(cat))) {
             return res.status(400).json({ error: "Invalid category format." });
         }
 
-        // ✅ Handle tags properly (convert to ObjectIds)
         let tagIds = [];
         if (tags && tags.length > 0) {
             for (let tagName of tags) {
                 let existingTag = await Tag.findOne({ name: tagName });
 
                 if (!existingTag) {
-                    // ✅ Create new tag if it doesn't exist
                     const newTag = new Tag({ name: tagName, slug: slugify(tagName, { lower: true }) });
                     await newTag.save();
                     tagIds.push(newTag._id);
@@ -48,7 +42,6 @@ exports.createBlog = async (req, res) => {
             }
         }
 
-        // ✅ Generate a unique slug
         let slug = slugify(title, { lower: true });
         let uniqueSlug = slug;
         let counter = 1;
@@ -58,25 +51,23 @@ exports.createBlog = async (req, res) => {
             counter++;
         }
 
-        // ✅ Create new blog object
         const newBlog = new Blog({
             title,
             category,
-            tags: tagIds,  // ✅ Store tag references (ObjectIds)
+            tags: tagIds,
             content,
             slug: uniqueSlug,
             metaTitle,
             metaDescription,
-            coverImage,  // ✅ Store cover image from req.body
+            coverImage,
             author: req.user._id,
             status,
             permalink: `/blog/${uniqueSlug}`,
         });
 
-        // ✅ Save the blog to the database
         await newBlog.save();
 
-        res.status(201).json({ success: true, message: "Blog published successfully", blog: newBlog });
+        res.status(201).json({ success: true, message: `Blog ${status} successfully`, blog: newBlog });
 
     } catch (error) {
         console.error("❌ Error creating blog:", error);
@@ -84,17 +75,19 @@ exports.createBlog = async (req, res) => {
     }
 };
 
-
-// Get all blogs
+// Get all blogs (Only show public, or private if owner/admin)
 exports.getAllBlogs = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = "", category, tags } = req.query;
-        const query = {};
+        const query = { $or: [{ status: "published" }] };
+
+        if (req.user) {
+            query.$or.push({ status: "private", author: req.user._id });
+        }
 
         if (search) {
-            query.$or = [
-                { title: { $regex: search, $options: "i" } },
-                { content: { $regex: search, $options: "i" } },
+            query.$and = [
+                { $or: [{ title: { $regex: search, $options: "i" } }, { content: { $regex: search, $options: "i" } }] },
             ];
         }
 
@@ -122,7 +115,7 @@ exports.getAllBlogs = async (req, res) => {
 };
 
 // Get a single blog post by ID or Slug
-    exports.getBlogById = async (req, res) => {
+exports.getBlogById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -137,11 +130,17 @@ exports.getAllBlogs = async (req, res) => {
 
         if (!blog) return res.status(404).json({ error: "Blog not found" });
 
+        if (blog.status === "private" && req.user?._id.toString() !== blog.author.toString() && req.user?.role !== "admin") {
+            return res.status(403).json({ error: "This blog is private." });
+        }
+
         res.status(200).json(blog);
     } catch (error) {
         res.status(500).json({ error: "Internal server error" });
     }
-}
+};
+
+
 // Update a Blog Post (Admin or Author Only)
 exports.updateBlog = async (req, res) => {
     try {
@@ -207,33 +206,85 @@ exports.likeBlog = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-// Save or Update Draft
-// Save or Update Draft (Can later be published)
+
+
 exports.saveDraft = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { title, content, category, tags, coverImage, status = "draft" } = req.body; 
-        const author = req.user.id;
+        console.log("📌 Draft Save - req.user:", req.user);
+        console.log("📤 Draft Save - req.body:", req.body);
 
-        const draftData = { 
-            title, 
-            content, 
-            category, 
-            tags, 
-            coverImage, 
-            author, 
-            status, 
-            updatedAt: Date.now() 
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ error: "Unauthorized. Please log in to save a draft." });
+        }
+
+        let { title, category, content, metaTitle, metaDescription, coverImage, tags } = req.body;
+
+        let status = "draft";
+
+        // Ensure title and content exist for drafts
+        if (!title || !content) {
+            return res.status(400).json({ error: "Title and content are required for saving a draft." });
+        }
+
+        if (typeof category === "string") category = [category];
+
+        // Validate category IDs
+        if (category && (!Array.isArray(category) || !category.every(cat => mongoose.Types.ObjectId.isValid(cat)))) {
+            return res.status(400).json({ error: "Invalid category format." });
+        }
+
+        let tagIds = [];
+        if (tags && tags.length > 0) {
+            for (let tagName of tags) {
+                let existingTag = await Tag.findOne({ name: tagName });
+
+                if (!existingTag) {
+                    const newTag = new Tag({ name: tagName, slug: slugify(tagName, { lower: true }) });
+                    await newTag.save();
+                    tagIds.push(newTag._id);
+                } else {
+                    tagIds.push(existingTag._id);
+                }
+            }
+        }
+
+        let slug = slugify(title, { lower: true });
+        let uniqueSlug = slug;
+        let counter = 1;
+
+        while (await Blog.findOne({ slug: uniqueSlug })) {
+            uniqueSlug = `${slug}-${counter}`;
+            counter++;
+        }
+
+        const draftData = {
+            title,
+            category,
+            tags: tagIds,
+            content,
+            slug: uniqueSlug, // Slug is pre-generated in case of publishing later
+            metaTitle: metaTitle || "",
+            metaDescription: metaDescription || "",
+            coverImage: coverImage || "",
+            author: req.user._id,
+            status,
+            permalink: `/blog/${uniqueSlug}`,
         };
 
-        const draft = id
-            ? await Blog.findOneAndUpdate({ _id: id, author }, draftData, { new: true, upsert: true })
-            : await new Blog(draftData).save();
+        let draft;
+        if (req.params.id) {
+            // Update existing draft
+            draft = await Blog.findByIdAndUpdate(req.params.id, draftData, { new: true });
+        } else {
+            // Create new draft
+            draft = await Blog.create(draftData);
+        }
 
-        res.status(200).json({ message: `Blog ${status === "published" ? "published" : "draft saved"}`, draft });
+        res.status(200).json({ success: true, message: "Draft saved successfully", blog: draft });
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("❌ Error saving draft:", error);
+        res.status(500).json({ error: "Internal server error." });
     }
 };
 
@@ -260,7 +311,6 @@ exports.publishDraft = async (req, res) => {
     }
 };
 
-
 // Get latest draft
 exports.getLatestDraft = async (req, res) => {
     try {
@@ -273,7 +323,6 @@ exports.getLatestDraft = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
-
 exports.getAllDrafts = async (req, res) => {
     try {
         const drafts = await Blog.find({ status: "draft" }).populate("author", "name email");
