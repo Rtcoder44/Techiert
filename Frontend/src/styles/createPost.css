@@ -14,3 +14,20 @@
   min-height: 500px !important; /* Ensures the editor is usable */
   height: 100% !important;
 }
+
+.custom-quill-editor .ql-container {
+  min-height: 400px;  /* ✅ Set min height */
+  max-height: 600px;  /* ✅ Set max height */
+  overflow-y: auto;   /* ✅ Enable scrolling */
+}
+
+.custom-quill-editor .ql-editor {
+  min-height: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+/* Ensure text is visible in dark and light themes */
+.ql-editor {
+  color: black !important; /* Ensure text is always visible */
+  min-height: 300px; /* Prevent collapse */
+}
