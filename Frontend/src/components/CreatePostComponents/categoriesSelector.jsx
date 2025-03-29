@@ -1,36 +1,36 @@
-import React, { useEffect } from "react";
-
-const techCategories = [
-  "Artificial Intelligence",
-  "Web Development",
-  "Cybersecurity",
-  "Blockchain",
-  "Cloud Computing",
-  "Data Science",
-  "Machine Learning",
-  "Internet of Things",
-  "Quantum Computing",
-];
+import React, { useEffect, useState } from "react";
 
 const CategoriesSelector = ({ selectedCategories, setSelectedCategories }) => {
+  const [categories, setCategories] = useState([]);
+
+  // Fetch categories from the backend
+  useEffect(() => {
+    fetch("http://localhost:5000/api/categories") // Adjust the API URL if needed
+      .then((res) => res.json())
+      .then((data) => setCategories(data))
+      .catch((err) => console.error("Error fetching categories:", err));
+  }, []);
+
+  // Load saved categories from localStorage
   useEffect(() => {
     const savedCategories = JSON.parse(localStorage.getItem("draftCategories")) || [];
     if (savedCategories.length > 0) {
       setSelectedCategories(savedCategories);
     }
-  }, []); // Runs only once when the component mounts
+  }, []);
 
+  // Save selected categories to localStorage
   useEffect(() => {
-    if (selectedCategories?.length > 0) {
+    if (selectedCategories.length > 0) {
       localStorage.setItem("draftCategories", JSON.stringify(selectedCategories));
     }
-  }, [selectedCategories]); // Updates storage whenever categories change
+  }, [selectedCategories]);
 
-  const handleCategoryChange = (category) => {
+  const handleCategoryChange = (categoryId) => {
     setSelectedCategories((prevCategories) =>
-      prevCategories.includes(category)
-        ? prevCategories.filter((cat) => cat !== category)
-        : [...prevCategories, category]
+      prevCategories.includes(categoryId)
+        ? prevCategories.filter((id) => id !== categoryId)
+        : [...prevCategories, categoryId]
     );
   };
 
@@ -38,15 +38,15 @@ const CategoriesSelector = ({ selectedCategories, setSelectedCategories }) => {
     <div>
       <h3 className="font-semibold mb-2">Select Categories:</h3>
       <div className="space-y-2">
-        {techCategories.map((category) => (
-          <label key={category} className="flex items-center space-x-2 cursor-pointer">
+        {categories.map((category) => (
+          <label key={category._id} className="flex items-center space-x-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={selectedCategories.includes(category)}
-              onChange={() => handleCategoryChange(category)}
+              checked={selectedCategories.includes(category._id)}
+              onChange={() => handleCategoryChange(category._id)}
               className="w-5 h-5 text-blue-500"
             />
-            <span>{category}</span>
+            <span>{category.name}</span>
           </label>
         ))}
       </div>

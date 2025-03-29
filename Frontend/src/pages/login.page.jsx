@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../context/authContext"; // Import Auth Context
-import "../styles/auth.css"; // Import styles
+import { useAuth } from "../context/authContext"; 
+import "../styles/auth.css"; 
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth(); // Get login function from context
+  const { login } = useAuth(); 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -34,12 +34,14 @@ const Login = () => {
       const response = await axios.post(
         "http://localhost:5000/api/auth/login",
         formData,
-        { withCredentials: true } // ✅ FIX: Allow cookies
+        { withCredentials: true }
       );
 
-      alert(response.data.message);
-      await login(); // ✅ FIX: Fetch user data after login
-      navigate("/dashboard");
+      await login(formData);  // ✅ Ensure login is called with credentials
+      setLoading(false);
+      navigate("/dashboard");  // ✅ Redirect after successful login
+
+      alert(response.data.message); // ✅ Alert after state updates
     } catch (error) {
       setServerError(error.response?.data?.error || "Invalid Credentials");
     } finally {
@@ -55,7 +57,11 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input type="email" name="email" value={formData.email} onChange={handleChange} className="auth-input" placeholder="Enter your email" />
+          {errors.email && <p className="error-text">{errors.email}</p>}
+          
           <input type="password" name="password" value={formData.password} onChange={handleChange} className="auth-input" placeholder="Enter your password" />
+          {errors.password && <p className="error-text">{errors.password}</p>}
+          
           <button type="submit" className="auth-button" disabled={loading}>{loading ? "Logging In..." : "Login"}</button>
         </form>
 

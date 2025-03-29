@@ -1,63 +1,75 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useAuth } from "../../context/authContext"; // ✅ Import Auth Context
 
 const PublishControls = ({ 
-  postTitle, editorContent, metaTitle, metaDescription, category, tags, imageFile, 
+  postTitle, editorContent, metaTitle, metaDescription, category, tags, coverImage, 
   postStatus, setPostStatus, onPublish 
 }) => {
-  const [uploading, setUploading] = useState(false);
+  const { user } = useAuth();
   const [publishing, setPublishing] = useState(false);
 
   const handlePublish = async () => {
-    if (!postTitle || !editorContent || !metaTitle || !metaDescription || !category) {
-      alert("Please fill in all required fields before publishing.");
-      return;
+    console.log("📤 coverImage before sending:", coverImage);
+    
+    if (!postTitle || !editorContent || !metaTitle || !metaDescription || category.length === 0) {
+        alert("⚠️ Please fill in all required fields before publishing.");
+        return;
     }
 
-    setPublishing(true);
-    let imageUrl = null;
+    if (!user) {
+        alert("❌ User session expired. Please log in again.");
+        return;
+    }
 
-    if (imageFile) {
-      setUploading(true);
-      const formData = new FormData();
-      formData.append("coverImage", imageFile);
+    try {
+        setPublishing(true);
 
-      try {
+        if (!coverImage) {
+            alert("⚠️ Please upload a cover image before publishing.");
+            setPublishing(false);
+            return;
+        }
+
+        console.log("✅ Cover Image is set:", coverImage);
+
+        const blogData = {
+            title: postTitle,
+            content: editorContent,
+            coverImage, // ✅ Directly passing coverImage URL
+            category,
+            tags,
+            metaTitle,
+            metaDescription,
+            status: postStatus,
+            author: user._id,
+        };
+
+        console.log("📤 Final blogData before sending:", JSON.stringify(blogData, null, 2));
+
         const response = await axios.post(
-          "http://localhost:5000/api/blogs/upload", 
-          formData, 
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            withCredentials: true,
-          }
+            "http://localhost:5000/api/blogs",
+            blogData,
+            { headers: { "Content-Type": "application/json" }, withCredentials: true }
         );
-        imageUrl = response.data.imageUrl;
-      } catch (error) {
-        console.error("Image upload failed:", error.response?.data || error.message);
-        alert("Image upload failed. The post will be published without an image.");
-      } finally {
-        setUploading(false);
-      }
+
+        console.log("✅ Server Response:", response.data);
+
+        if (response.status === 201 || response.status === 200) {
+            alert("✅ Post Published Successfully!");
+            onPublish(response.data);
+        } else {
+            throw new Error("Unexpected response from the server.");
+        }
+    } catch (error) {
+        console.error("❌ Publishing failed:", error.response?.data || error.message);
+        alert(`🚨 Publishing failed: ${error.response?.data?.error || "Something went wrong"}`);
+    } finally {
+        setPublishing(false);
     }
+};
 
-    // Blog data to send
-    const blogData = {
-      title: postTitle,
-      content: editorContent,
-      coverImage: imageUrl, // Uploaded image URL
-      category,
-      tags,
-      metaTitle,
-      metaDescription,
-      status: postStatus, 
-    };
 
-    onPublish(blogData); // Call parent function to publish post
-    setPublishing(false);
-  };
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-md">
@@ -72,14 +84,14 @@ const PublishControls = ({
         <option value="published">Public</option>
       </select>
 
-      {uploading && <p className="text-sm text-blue-400 mt-2">Uploading image...</p>}
+      {publishing && <p className="text-sm text-yellow-400 mt-2">⏳ Publishing post...</p>}
 
       <button 
         onClick={handlePublish}
         className="mt-4 w-full px-4 py-2 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-600"
-        disabled={uploading || publishing} // Disable button while uploading or publishing
+        disabled={publishing}
       >
-        {publishing ? "Publishing..." : "Publish Post"}
+        {publishing ? "📢 Publishing..." : "🚀 Publish Post"}
       </button>
     </div>
   );
