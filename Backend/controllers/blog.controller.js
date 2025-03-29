@@ -1,43 +1,86 @@
 const Blog = require("../models/blogs.model");
+const mongoose = require("mongoose");
 const User = require("../models/users.model");
 const Comment = require("../models/comments.model");
 const slugify = require("slugify");
+const Tag = require("../models/tags.model");
 
-// Create a new blog post (Admin & Author Only)
-// Create a new blog post (Admin & Author Only)
+
 exports.createBlog = async (req, res) => {
     try {
-        if (!req.user) {
+        console.log("📌 req.user:", req.user);
+        console.log("📤 req.body:", req.body);
+
+        // ✅ Ensure the user is logged in
+        if (!req.user || !req.user._id) {
             return res.status(401).json({ error: "Unauthorized. Please log in to create a blog." });
         }
 
-        const { title, category, content, status = "published" } = req.body; // Default status = "published"
-        if (!title || !category || !content) {
-            return res.status(400).json({ error: "All fields (title, category, content) are required." });
+        let { title, category, content, status = "published", metaTitle, metaDescription, coverImage, tags } = req.body;
+
+        // ✅ Validate required fields
+        if (!title || !category || !content || !metaTitle || !metaDescription) {
+            return res.status(400).json({ error: "All fields are required." });
         }
 
-        const slug = slugify(title, { lower: true });
+        // ✅ Convert category to array if it is a single string
+        if (typeof category === "string") category = [category];
 
+        // ✅ Ensure category is an array of valid MongoDB ObjectIds
+        if (!Array.isArray(category) || !category.every(cat => mongoose.Types.ObjectId.isValid(cat))) {
+            return res.status(400).json({ error: "Invalid category format." });
+        }
+
+        // ✅ Handle tags properly (convert to ObjectIds)
+        let tagIds = [];
+        if (tags && tags.length > 0) {
+            for (let tagName of tags) {
+                let existingTag = await Tag.findOne({ name: tagName });
+
+                if (!existingTag) {
+                    // ✅ Create new tag if it doesn't exist
+                    const newTag = new Tag({ name: tagName, slug: slugify(tagName, { lower: true }) });
+                    await newTag.save();
+                    tagIds.push(newTag._id);
+                } else {
+                    tagIds.push(existingTag._id);
+                }
+            }
+        }
+
+        // ✅ Generate a unique slug
+        let slug = slugify(title, { lower: true });
+        let uniqueSlug = slug;
+        let counter = 1;
+
+        while (await Blog.findOne({ slug: uniqueSlug })) {
+            uniqueSlug = `${slug}-${counter}`;
+            counter++;
+        }
+
+        // ✅ Create new blog object
         const newBlog = new Blog({
             title,
             category,
+            tags: tagIds,  // ✅ Store tag references (ObjectIds)
             content,
-            slug,
+            slug: uniqueSlug,
+            metaTitle,
+            metaDescription,
+            coverImage,  // ✅ Store cover image from req.body
             author: req.user._id,
-            status // Now supports both "draft" & "published"
+            status,
+            permalink: `/blog/${uniqueSlug}`,
         });
 
-        if (req.file) {
-            newBlog.coverImage = `/uploads/${req.file.filename}`;
-        }
-
+        // ✅ Save the blog to the database
         await newBlog.save();
 
-        res.status(201).json({ message: "Blog published successfully", blog: newBlog });
+        res.status(201).json({ success: true, message: "Blog published successfully", blog: newBlog });
 
     } catch (error) {
-        console.error("Error creating blog:", error);
-        res.status(500).json({ error: "Internal server error. Please try again later." });
+        console.error("❌ Error creating blog:", error);
+        res.status(500).json({ error: "Internal server error." });
     }
 };
 
@@ -79,7 +122,7 @@ exports.getAllBlogs = async (req, res) => {
 };
 
 // Get a single blog post by ID or Slug
-exports.getBlogById = async (req, res) => {
+    exports.getBlogById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -98,8 +141,7 @@ exports.getBlogById = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: "Internal server error" });
     }
-};
-
+}
 // Update a Blog Post (Admin or Author Only)
 exports.updateBlog = async (req, res) => {
     try {
@@ -127,7 +169,6 @@ exports.updateBlog = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 // Delete a Blog Post (Admin or Author Only)
 exports.deleteBlog = async (req, res) => {
     try {
@@ -144,7 +185,6 @@ exports.deleteBlog = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 // Like or Unlike a Blog Post (User Only)
 exports.likeBlog = async (req, res) => {
     try {
@@ -167,7 +207,6 @@ exports.likeBlog = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 // Save or Update Draft
 // Save or Update Draft (Can later be published)
 exports.saveDraft = async (req, res) => {
@@ -252,18 +291,15 @@ exports.commentOnBlog = async (req, res) => {
         const { blogId } = req.params;
         const { commentText } = req.body;
 
-        // Check if user is logged in
         if (!req.user) {
             return res.status(401).json({ error: "You must be logged in to comment" });
         }
 
-        // Check if the blog exists
         const blog = await Blog.findById(blogId);
         if (!blog) {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        // Create a new comment
         const newComment = new Comment({
             text: commentText,
             user: req.user._id,
@@ -272,11 +308,9 @@ exports.commentOnBlog = async (req, res) => {
 
         await newComment.save();
 
-        // Push comment ID to blog's comments array
         blog.comments.push(newComment._id);
         await blog.save();
 
-        // Populate comment with user details
         await newComment.populate("user", "name");
 
         res.status(201).json({ message: "Comment added successfully", comment: newComment });

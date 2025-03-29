@@ -1,13 +1,13 @@
 const User = require("../models/users.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
+
 const isProduction = process.env.NODE_ENV === "production";
 
 // ✅ Generate JWT Token
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user._id, role: user.role },
+    { _id: user._id, role: user.role },  // ✅ Ensuring `_id` is correctly used
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -17,158 +17,127 @@ const generateToken = (user) => {
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    let user = await User.findOne({ email });
+    console.log("🔍 Signup request received:", { name, email });
 
-    if (user) return res.status(400).json({ error: "User already exists" });
+    let user = await User.findOne({ email });
+    if (user) {
+      console.log("❌ User already exists");
+      return res.status(400).json({ error: "User already exists" });
+    }
+
     const avatarUrl = req.file ? req.file.path : "https://via.placeholder.com/200";
 
-    user = new User({ name, email, password,avatar: avatarUrl });
+    user = new User({ name, email, password, avatar: avatarUrl });
     await user.save();
 
-    // Set HTTP-only cookie
-    res.cookie("token", generateToken(user), {
+    const token = generateToken(user);
+
+    // ✅ Set HTTP-only cookie
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: isProduction, // ✅ Only secure in production
+      secure: isProduction, 
       sameSite: isProduction ? "Strict" : "Lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    res.json({ message: "✅ User Created Successfully!", user });
+
+    console.log("✅ User Created Successfully:", user);
+
+    res.status(201).json({
+      success: true,
+      message: "User Created Successfully!",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar
+      }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("❌ Signup Error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ✅ User Login
 exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email }).select("+password");
+  const { email, password } = req.body;
 
-    if (!user) return res.status(400).json({ error: "User not found" });
+  try {
+    console.log("🔍 Login attempt:", { email });
+
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      console.log("❌ Invalid email");
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid Credentials" });
+    if (!isMatch) {
+      console.log("❌ Invalid password");
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
 
-    res.cookie("token", generateToken(user), {
-      httpOnly: true,
+    const token = generateToken(user);
+
+    res.cookie("token", token, {
+      httpOnly: true, 
       secure: isProduction,
-      sameSite: isProduction ? "Strict" : "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
 
-    res.json({
-      message: "✅ Login Successful!",
+    console.log("✅ Login Successful:", { _id: user._id, role: user.role });
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar, // ✅ Ensure avatar is included
         role: user.role,
-      },
+        avatar: user.avatar
+      }
     });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("❌ Login Error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
 // ✅ User Logout
 exports.logout = (req, res) => {
+  console.log("🔍 Logout request received");
+
   res.clearCookie("token");
-  res.json({ message: "✅ Logged Out Successfully!" });
+  console.log("✅ User logged out");
+  res.json({ success: true, message: "Logged out successfully!" });
 };
 
 // ✅ Get Authenticated User
 exports.getMe = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Not authorized" });
+    console.log("🔍 Fetching authenticated user:", req.user);
+
+    if (!req.user || !req.user._id) {
+      console.log("❌ Not authorized");
+      return res.status(401).json({ success: false, error: "Not authorized" });
     }
 
-    // Fetch the user details from the database (excluding password)
-    const user = await User.findById(req.user.id).select("-password");
-
+    const user = await User.findById(req.user._id).select("-password");
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      console.log("❌ User not found");
+      return res.status(404).json({ success: false, error: "User not found" });
     }
 
-    res.json(user); // ✅ Return full user details including avatar
+    console.log("✅ Authenticated user fetched:", user);
+    return res.status(200).json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-
-// ✅ Forgot Password
-exports.forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-
-    if (!user) return res.status(400).json({ error: "User not found" });
-
-    // Generate a password reset token
-    const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
-
-    // Configure Nodemailer transporter
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        type: 'OAuth2',
-        user: process.env.EMAIL,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-        accessToken: process.env.GOOGLE_ACCESS_TOKEN,
-      },
-    });
-
-    // Email content
-    const mailOptions = {
-      from: process.env.EMAIL,
-      to: user.email,
-      subject: "Reset Your Password",
-      html: `<p>Click the link below to reset your password:</p>
-             <a href="${process.env.CLIENT_URL}/reset-password/${resetToken}">Reset Password</a>
-             <p>This link will expire in 15 minutes.</p>`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.json({ message: "✅ Password reset link sent to your email" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ✅ Reset Password
-
-exports.resetPassword = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const { newPassword } = req.body;
-
-    // Verify the reset token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (error) {
-      return res.status(400).json({ error: "Invalid or expired token" });
-    }
-
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(400).json({ error: "User not found" });
-
-    // ✅ Always hash the new password before saving
-    user.password = await bcrypt.hash(newPassword, 10);
-
-    await user.save();
-    
-
-    res.json({ message: "✅ Password reset successful" });
-
-  } catch (error) {
-   
-    res.status(500).json({ error: error.message });
+    console.error("❌ Error in getMe:", error);
+    return res.status(500).json({ success: false, error: "Internal server error" });
   }
 };

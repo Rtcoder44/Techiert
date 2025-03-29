@@ -13,8 +13,9 @@ app.use(cookieParser());
 // Enable CORS to allow frontend requests with cookies
 app.use(
   cors({
-    origin: "http://localhost:5173", // Update with your frontend URL
-    credentials: true, // Allow cookies in cross-origin requests
+    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Allow frontend requests
+    methods: "GET, POST, PUT, DELETE",
+    credentials: true,
   })
 );
 
@@ -29,14 +30,16 @@ app.use("/api/blogs", blogRoute);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tags", tagRoutes);
 
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.log("❌ Error Connecting to MongoDB:", err));
+  .catch((err) => console.error("❌ Error Connecting to MongoDB:", err));
 
+// Health Check Route
 app.get("/homepage", (req, res) => {
   res.send("🔥 Techiert Backend is Running!");
 });
