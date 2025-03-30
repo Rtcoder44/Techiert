@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useAuth } from "../../context/authContext"; // ✅ Import Auth Context
+import { useAuth } from "../../context/AuthContext"; // ✅ Import Auth Context
 
 const PublishControls = ({ 
   postId, // ✅ This will store the draft ID if updating

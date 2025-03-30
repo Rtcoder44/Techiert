@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/authContext"; // Import useAuth
+import { useAuth } from "./context/AuthContext"; // Import useAuth
 import Signup from "./pages/signup.page";
 import Login from "./pages/login.page";
 import ForgotPasswordPage from "./pages/forgotPassword.page";
 import ResetPasswordPage from "./pages/resetPassword.page";
 import DashboardPage from "./pages/dashboard.page";
 import CreatePostPage from "./pages/createPostPage";
+import ManageBlog from "./pages/manageBlog";
 import "./index.css";
 
 function App() {
@@ -26,10 +27,15 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
-        {/* ✅ Protected Route: Only Admins Can Access Create Post */}
+        {/* ✅ Protected Route: Only Admins Can Access Create and Edit Post */}
         <Route 
           path="/dashboard/create-post" 
-          element={user?.role === "admin" ? <CreatePostPage /> : <Navigate to="/dashboard" replace />}
+          element={user?.role === "admin" ? <CreatePostPage /> : <Navigate to="/dashboard" replace />} 
+        />
+   
+        <Route 
+          path="/dashboard/manage-blogs" 
+          element={user?.role === "admin" ? <ManageBlog /> : <Navigate to="/dashboard" replace />} 
         />
 
         {/* ✅ Dashboard Route */}

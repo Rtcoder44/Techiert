@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 import { FaTimes } from "react-icons/fa";
 
 /*************  ✨ Codeium Command ⭐  *************/
@@ -32,7 +32,7 @@ import { FaTimes } from "react-icons/fa";
     user?.role === "admin"
       ? [
           { name: "Dashboard", path: "/dashboard" },
-          { name: "Manage Blog", path: "/dashboard/blog" },
+          { name: "Manage Blog", path: "/dashboard/manage-blogs" },
           { name: "Manage Users", path: "/dashboard/users" },
           { name: "Analytics", path: "/dashboard/analytics" },
           { name: "Settings", path: "/dashboard/settings" },
