@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import DashboardSidebar from "./dashboardSidebar";
 import DashboardNavbar from "./dashboardNavbar";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 
 const DashboardLayout = ({ children }) => {
   const { user } = useAuth();

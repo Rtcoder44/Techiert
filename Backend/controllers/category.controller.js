@@ -1,6 +1,8 @@
 const Category = require("../models/categories.model");
+const Blog = require("../models/blogs.model"); // Import Blog model
+const slugify = require("slugify");
 
-// 🔹 Create a new category (Admin Only)
+// ✅ Create a new category (Admin Only)
 const createCategory = async (req, res) => {
     try {
         if (req.user.role !== "admin") {
@@ -8,19 +10,19 @@ const createCategory = async (req, res) => {
         }
 
         const { name } = req.body;
-        if (!name) {
-            return res.status(400).json({ error: "Category name is required" });
-        }
+        if (!name) return res.status(400).json({ error: "Category name is required" });
 
-        // 🔹 Convert category name to lowercase for case-insensitive comparison
+        // 🔹 Normalize name and slug
         const categoryName = name.trim().toLowerCase();
+        const slug = slugify(categoryName, { lower: true, strict: true });
 
-        const existingCategory = await Category.findOne({ name: categoryName });
+        // 🔹 Check if category already exists
+        const existingCategory = await Category.findOne({ slug });
         if (existingCategory) {
             return res.status(400).json({ error: "Category already exists" });
         }
 
-        const category = new Category({ name: categoryName });
+        const category = new Category({ name: categoryName, slug });
         await category.save();
 
         res.status(201).json({ message: "Category created successfully", category });
@@ -29,17 +31,17 @@ const createCategory = async (req, res) => {
     }
 };
 
-// 🔹 Get all categories
+// ✅ Get all categories
 const getAllCategories = async (req, res) => {
     try {
-        const categories = await Category.find({}, "_id name"); // ✅ Only return `_id` and `name`
+        const categories = await Category.find({}, "_id name slug");
         res.status(200).json(categories);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// 🔹 Update category (Admin Only)
+// ✅ Update category (Admin Only)
 const updateCategory = async (req, res) => {
     try {
         if (req.user.role !== "admin") {
@@ -48,25 +50,12 @@ const updateCategory = async (req, res) => {
 
         const { id } = req.params;
         const { name } = req.body;
+        if (!name) return res.status(400).json({ error: "Category name is required" });
 
-        if (!name) {
-            return res.status(400).json({ error: "Category name is required" });
-        }
+        const slug = slugify(name.trim().toLowerCase(), { lower: true, strict: true });
 
-        // 🔹 Validate ObjectId format
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({ error: "Invalid category ID format" });
-        }
-
-        const updatedCategory = await Category.findByIdAndUpdate(
-            id,
-            { name: name.trim().toLowerCase() },
-            { new: true }
-        );
-
-        if (!updatedCategory) {
-            return res.status(404).json({ error: "Category not found" });
-        }
+        const updatedCategory = await Category.findByIdAndUpdate(id, { name, slug }, { new: true });
+        if (!updatedCategory) return res.status(404).json({ error: "Category not found" });
 
         res.status(200).json({ message: "Category updated successfully", category: updatedCategory });
     } catch (error) {
@@ -74,7 +63,7 @@ const updateCategory = async (req, res) => {
     }
 };
 
-// 🔹 Delete category (Admin Only)
+// ✅ Delete category (Admin Only, Check if blogs exist)
 const deleteCategory = async (req, res) => {
     try {
         if (req.user.role !== "admin") {
@@ -83,15 +72,14 @@ const deleteCategory = async (req, res) => {
 
         const { id } = req.params;
 
-        // 🔹 Validate ObjectId format
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({ error: "Invalid category ID format" });
+        // 🔹 Check if any blog is using this category
+        const blogsUsingCategory = await Blog.findOne({ category: id });
+        if (blogsUsingCategory) {
+            return res.status(400).json({ error: "Cannot delete. Category is in use." });
         }
 
         const deletedCategory = await Category.findByIdAndDelete(id);
-        if (!deletedCategory) {
-            return res.status(404).json({ error: "Category not found" });
-        }
+        if (!deletedCategory) return res.status(404).json({ error: "Category not found" });
 
         res.status(200).json({ message: "Category deleted successfully" });
     } catch (error) {
@@ -99,9 +87,4 @@ const deleteCategory = async (req, res) => {
     }
 };
 
-module.exports = {
-    createCategory,
-    getAllCategories,
-    updateCategory,
-    deleteCategory
-};
+module.exports = { createCategory, getAllCategories, updateCategory, deleteCategory };
