@@ -6,6 +6,8 @@ const router = express.Router();
 
 // 📌 Public Routes
 router.get("/", categoryController.getAllCategories);
+router.get("/:slug", categoryController.getBlogsByCategorySlug);
+
 
 // 📌 Admin-Only Routes
 router.post("/", authMiddleware, adminMiddleware, categoryController.createCategory);

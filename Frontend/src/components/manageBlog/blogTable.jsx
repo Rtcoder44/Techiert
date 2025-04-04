@@ -7,10 +7,9 @@ import BlogEditModal from "../manageBlog/blogEditModal"; // Import the BlogEditM
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const BlogTable = ({ blogs, setBlogs }) => {
-  const { user } = useAuth(); // Get the logged-in user
+  const { user } = useAuth();
   const [editingBlog, setEditingBlog] = useState(null);
 
-  // Ensure we get the actual blog list
   const blogList = Array.isArray(blogs.blogs) ? blogs.blogs : [];
 
   const handleDelete = async (id) => {
@@ -23,7 +22,7 @@ const BlogTable = ({ blogs, setBlogs }) => {
 
     try {
       await axios.delete(`${API_BASE_URL}/api/blogs/${id}`, {
-        withCredentials: true, // Ensure cookies are sent for authentication
+        withCredentials: true,
       });
 
       setBlogs((prevBlogs) => ({
@@ -45,32 +44,34 @@ const BlogTable = ({ blogs, setBlogs }) => {
         <table className="w-full border-collapse border border-gray-300 shadow-lg">
           <thead>
             <tr className="bg-[#1E293B] text-white text-left">
-              <th className="border p-3">Title</th>
-              <th className="border p-3">Category</th>
-              <th className="border p-3">Tags</th>
-              <th className="border p-3">Date</th>
-              <th className="border p-3">SEO Details</th>
-              <th className="border p-3">Status</th> {/* ✅ Added Status Column */}
-              <th className="border p-3 text-center">Actions</th>
+              <th className="border p-3 w-1/4">Title</th>
+              <th className="border p-3 w-1/5">Category</th>
+              <th className="border p-3 w-1/6">Date</th>
+              <th className="border p-3 w-1/6">Status</th>
+              <th className="border p-3 w-1/6 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {blogList.map((blog) => (
               <tr key={blog._id} className="border bg-white hover:bg-gray-100 transition duration-300">
-                <td className="border p-3">{blog.title}</td>
-                <td className="border p-3">{blog.category?.name || "Uncategorized"}</td>
-                <td className="border p-3">
-                  {blog.tags && blog.tags.length > 0
-                    ? blog.tags.map((tag) => tag.name).join(", ")
-                    : "No Tags"}
+                {/* Title with Ellipsis */}
+                <td className="border p-3 truncate max-w-[200px]">
+                  <span className="block truncate">{blog.title}</span>
                 </td>
-                <td className="border p-3">{new Date(blog.createdAt).toLocaleDateString()}</td>
-                <td className="border p-3">
-                  <span className="px-3 py-1 bg-green-500 text-white rounded">
-                    {blog.seoScore || "N/A"} / 100
+
+                {/* Categories with Ellipsis */}
+                <td className="border p-3 truncate max-w-[180px]">
+                  <span className="block truncate">
+                    {Array.isArray(blog.category) && blog.category.length > 0
+                      ? blog.category.map((cat) => cat.name).join(", ")
+                      : "Uncategorized"}
                   </span>
                 </td>
-                {/* ✅ Status Column with Colored Badges */}
+
+                {/* Date */}
+                <td className="border p-3">{new Date(blog.createdAt).toLocaleDateString()}</td>
+
+                {/* Status with Color Badge */}
                 <td className="border p-3">
                   <span
                     className={`px-3 py-1 text-white rounded ${
@@ -84,6 +85,8 @@ const BlogTable = ({ blogs, setBlogs }) => {
                     {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
                   </span>
                 </td>
+
+                {/* Actions */}
                 <td className="border p-3 flex justify-center gap-2">
                   <button
                     onClick={() => setEditingBlog(blog)}
@@ -109,7 +112,7 @@ const BlogTable = ({ blogs, setBlogs }) => {
         <BlogEditModal
           blog={editingBlog}
           onClose={() => setEditingBlog(null)}
-          onUpdate={() => setBlogs((prevBlogs) => ({ ...prevBlogs }))} // Update after editing
+          onUpdate={() => setBlogs((prevBlogs) => ({ ...prevBlogs }))}
         />
       )}
     </div>
