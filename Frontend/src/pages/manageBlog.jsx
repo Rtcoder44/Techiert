@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import BlogTable from "../components/manageBlog/blogTable";
 import BlogFilters from "../components/manageBlog/blogFilters";
 import DashboardSidebar from "../components/dashboard/dashboardSidebar";
@@ -8,6 +9,7 @@ import { FaBars } from "react-icons/fa";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ManageBlog = () => {
+  const navigate = useNavigate();
   const [blogs, setBlogs] = useState({ blogs: [], totalBlogs: 0, currentPage: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,7 +60,15 @@ const ManageBlog = () => {
 
       {/* ✅ Main Content Area */}
       <div className={`flex-1 p-6 bg-[#F1F5F9] min-h-screen text-[#1E293B] transition-all duration-300 ${isSidebarOpen ? "ml-64" : "ml-0"}`}>
-        <h1 className="text-3xl font-bold mb-6 ml-12">Manage Blog</h1>
+      <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl mb-6 ml-13 font-bold">Manage Blog</h1>
+          <button
+            className="px-6 py-3 bg-[#1E293B] text-white rounded-lg hover:bg-[#0F172A] transition"
+            onClick={() => navigate("/dashboard/create-post")}
+          >
+            + Add New Post
+          </button>
+        </div>
 
         <BlogFilters setBlogs={setBlogs} />
 

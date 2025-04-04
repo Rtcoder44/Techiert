@@ -8,6 +8,8 @@ import DashboardPage from "./pages/dashboard.page";
 import CreatePostPage from "./pages/createPostPage";
 import ManageBlog from "./pages/manageBlog";
 import "./index.css";
+import ManageCategoryPage from "./pages/manageCategoryPage";
+import CategoryPage from "./pages/CategoryPage";
 
 function App() {
   const { user, loading } = useAuth(); // Get user data from context
@@ -37,9 +39,14 @@ function App() {
           path="/dashboard/manage-blogs" 
           element={user?.role === "admin" ? <ManageBlog /> : <Navigate to="/dashboard" replace />} 
         />
+        <Route 
+          path="/dashboard/manage-category" 
+          element={user?.role === "admin" ? <ManageCategoryPage/> : <Navigate to="/dashboard" replace />} 
+        />
 
-        {/* ✅ Dashboard Route */}
+        {/* ✅ Public Route */}
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/category/:slug" element={<CategoryPage />} />
       </Routes>
     </Router>
   );

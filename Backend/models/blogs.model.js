@@ -19,11 +19,11 @@ const blogSchema = new mongoose.Schema({
         type: String, // URL of featured image
         default: ""
     },
-    category: {
+    category: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Category",
         required: true
-    },
+    }],
     tags: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Tag"
