@@ -122,7 +122,10 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
             >
               {category.isDropdown ? (
                 <>
-                  <Link to={`/dashboard/category/${category.slug}`} className="flex items-center gap-1 hover:text-[#E7000B]">
+                  <Link
+                    to={`/dashboard/category/${category.slug}`}
+                    className="flex items-center gap-1 hover:text-[#E7000B]"
+                  >
                     {category.name} <FaChevronDown />
                   </Link>
                   <AnimatePresence>
@@ -135,8 +138,13 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
                         className="absolute left-0 top-full bg-[#1E293B] text-white shadow-lg rounded-md w-56 z-[999]"
                       >
                         {category.children.map((child, index) => (
-                          <li key={index} className="px-4 py-2 hover:bg-gray-700">
-                            <Link to={`/dashboard/category/${child.slug}`}>
+                          <li
+                            key={index}
+                            className="px-4 py-2 hover:bg-gray-700"
+                          >
+                            <Link
+                              to={`/dashboard/category/${child.slug}`}
+                            >
                               {child.name}
                             </Link>
                           </li>
@@ -146,7 +154,10 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
                   </AnimatePresence>
                 </>
               ) : (
-                <Link to={`/dashboard/category/${category.slug}`} className="hover:text-[#E7000B]">
+                <Link
+                  to={`/dashboard/category/${category.slug}`}
+                  className="hover:text-[#E7000B]"
+                >
                   {category.name}
                 </Link>
               )}
@@ -154,7 +165,6 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
           ))}
         </ul>
       </div>
-
 
       {/* Search Bar */}
       <div className="hidden md:block relative ml-4 w-72 z-[999]">
@@ -177,7 +187,10 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
             >
               {searchResults.map((result, index) => (
                 <li key={index} className="px-4 py-2 hover:bg-gray-200">
-                  <Link to={`/dashboard/category/${result.slug}`} onClick={() => setSearchQuery("")}>
+                  <Link
+                    to={`/dashboard/category/${result.slug}`}
+                    onClick={() => setSearchQuery("")}
+                  >
                     {result.name}
                   </Link>
                 </li>
@@ -187,8 +200,23 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
         </AnimatePresence>
       </div>
 
+      {/* Right Section (Login Button) */}
+      {!user && (
+        <div className="hidden md:flex items-center ml-6">
+          <Link
+            to="/login"
+            className="bg-[#E7000B] hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-colors duration-300"
+          >
+            Login
+          </Link>
+        </div>
+      )}
+
       {/* Mobile Menu Toggle */}
-      <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-white text-2xl">
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="md:hidden text-white text-2xl"
+      >
         ☰
       </button>
 
@@ -202,7 +230,10 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
             transition={{ duration: 0.4 }}
             className="fixed inset-0 bg-[#1E293B] text-white flex flex-col items-center space-y-4 pt-20 z-[999] w-full h-screen"
           >
-            <button onClick={() => setMobileMenuOpen(false)} className="absolute top-5 right-5 text-3xl">
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="absolute top-5 right-5 text-3xl"
+            >
               <FaTimes />
             </button>
 
@@ -216,32 +247,53 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
                 onChange={handleSearch}
               />
               <AnimatePresence>
-          {searchResults.length > 0 && (
-            <motion.ul
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2 }}
-              className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[999]"
-            >
-              {searchResults.map((result, index) => (
-                <li key={index} className="px-4 py-2 hover:bg-gray-200">
-                  <Link to={`/dashboard/category/${result.slug}`} onClick={() => setSearchQuery("")}>
-                    {result.name}
-                  </Link>
-                </li>
-              ))}
-            </motion.ul>
-          )}
-        </AnimatePresence>
+                {searchResults.length > 0 && (
+                  <motion.ul
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[999]"
+                  >
+                    {searchResults.map((result, index) => (
+                      <li
+                        key={index}
+                        className="px-4 py-2 hover:bg-gray-200"
+                      >
+                        <Link
+                          to={`/dashboard/category/${result.slug}`}
+                          onClick={() => setSearchQuery("")}
+                        >
+                          {result.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="w-full flex flex-col items-center space-y-3 mt-6">
               {structuredCategories.map((category) => (
-                <Link key={category.name} to={`/dashboard/category/${category.slug}`} onClick={() => setMobileMenuOpen(false)}>
+                <Link
+                  key={category.name}
+                  to={`/dashboard/category/${category.slug}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   {category.name}
                 </Link>
               ))}
+
+              {/* Mobile Login Button */}
+              {!user && (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="mt-4 bg-[#E7000B] hover:bg-red-700 text-white px-6 py-2 rounded-xl"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

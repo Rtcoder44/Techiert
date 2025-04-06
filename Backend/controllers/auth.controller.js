@@ -1,6 +1,7 @@
 const User = require("../models/users.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const Blog = require("../models/blogs.model");
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -128,7 +129,11 @@ exports.getMe = async (req, res) => {
       return res.status(401).json({ success: false, error: "Not authorized" });
     }
 
-    const user = await User.findById(req.user._id).select("-password");
+    // ✅ Populate savedPosts to access post IDs/titles in frontend
+    const user = await User.findById(req.user._id)
+      .select("-password")
+      .populate("savedPosts", "_id title slug"); // Add other fields if needed
+
     if (!user) {
       console.log("❌ User not found");
       return res.status(404).json({ success: false, error: "User not found" });
@@ -141,3 +146,54 @@ exports.getMe = async (req, res) => {
     return res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
+
+
+// save post 
+// controllers/auth.controller.js
+exports.toggleSavePost  = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { blogId } = req.params;
+
+    const user = await User.findById(userId);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const alreadySaved = user.savedPosts.includes(blogId);
+
+    if (alreadySaved) {
+      user.savedPosts.pull(blogId);
+    } else {
+      user.savedPosts.push(blogId);
+    }
+
+    await user.save();
+
+    res.status(200).json({ saved: !alreadySaved });
+  } catch (error) {
+    console.error("Toggle save post error:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.getSavedPosts = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate({
+      path: "savedPosts",
+      populate: { path: "author category tags" },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ savedPosts: user.savedPosts });
+  } catch (error) {
+    console.error("Error fetching saved posts:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+

@@ -4,6 +4,8 @@ const User = require("../models/users.model");
 const Comment = require("../models/comments.model");
 const slugify = require("slugify");
 const Tag = require("../models/tags.model");
+const Like = require("../models/likes.model")
+const jwt = require("jsonwebtoken");
 
 
 exports.createBlog = async (req, res) => {
@@ -137,30 +139,85 @@ exports.getAllBlogs = async (req, res) => {
 // Get a single blog post by ID or Slug
 exports.getBlogById = async (req, res) => {
     try {
+      const { id } = req.params;
+  
+      const userId = req.user?._id?.toString();
+      const userRole = req.user?.role;
+  
+      const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
+  
+      const blog = await Blog.findOneAndUpdate(
+        isValidObjectId ? { $or: [{ _id: id }, { slug: id }] } : { slug: id },
+        { $inc: { views: 1 } },
+        { new: true }
+      )
+        .populate("author", "name")
+        .populate("category", "name")
+        .lean();
+  
+      if (!blog) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+  
+      if (
+        blog.status === "private" &&
+        userId !== blog.author._id.toString() &&
+        userRole !== "admin"
+      ) {
+        return res.status(403).json({ error: "This blog is private." });
+      }
+  
+      const [likesCount, userLiked] = await Promise.all([
+        Like.countDocuments({ blogId: blog._id }),
+        userId ? Like.exists({ blogId: blog._id, userId }) : false,
+      ]);
+  
+      blog.likesCount = likesCount;
+      blog.isLikedByUser = Boolean(userLiked);
+  
+      res.status(200).json(blog);
+    } catch (error) {
+      console.error("❌ Error fetching blog:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+    
+  
+  
+
+  // Get Related Blogs by Tags or Category
+exports.getRelatedBlogs = async (req, res) => {
+    try {
         const { id } = req.params;
 
-        const blog = await Blog.findOneAndUpdate(
-            { $or: [{ _id: id }, { slug: id }] },
-            { $inc: { views: 1 } },
-            { new: true }
-        )
+        // Find the main blog first
+        const mainBlog = await Blog.findById(id).populate("tags category");
+        if (!mainBlog) return res.status(404).json({ error: "Main blog not found." });
+
+        // Build query to find related blogs
+        const relatedQuery = {
+            _id: { $ne: mainBlog._id },
+            status: "published",
+            $or: [
+                { tags: { $in: mainBlog.tags.map(tag => tag._id) } },
+                { category: { $in: mainBlog.category.map(cat => cat._id) } }
+            ]
+        };
+
+        const relatedBlogs = await Blog.find(relatedQuery)
+            .limit(6)
+            .sort({ createdAt: -1 })
             .populate("author", "name")
             .populate("category", "name")
-            .lean();
+            .populate("tags", "name");
 
-        if (!blog) return res.status(404).json({ error: "Blog not found" });
+        res.status(200).json({ success: true, relatedBlogs });
 
-        if (blog.status === "private" && req.user?._id.toString() !== blog.author.toString() && req.user?.role !== "admin") {
-            return res.status(403).json({ error: "This blog is private." });
-        }
-
-        res.status(200).json(blog);
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        console.error("❌ Error fetching related blogs:", error);
+        res.status(500).json({ error: "Failed to fetch related blogs." });
     }
 };
-
-
 
 
 // Update a Blog Post (Admin or Author Only)
@@ -266,25 +323,31 @@ exports.deleteBlog = async (req, res) => {
 // Like or Unlike a Blog Post (User Only)
 exports.likeBlog = async (req, res) => {
     try {
-        const blog = await Blog.findById(req.params.id);
-        if (!blog) return res.status(404).json({ error: "Blog not found" });
-
-        const hasLiked = blog.likes.includes(req.user.id);
-
-        if (hasLiked) {
-            blog.likes.pull(req.user.id);
-            await blog.save();
-            return res.status(200).json({ message: "Blog Unliked", likes: blog.likes.length });
-        }
-
-        blog.likes.push(req.user.id);
-        await blog.save();
-        res.status(200).json({ message: "Blog Liked", likes: blog.likes.length });
-
+      const blogId = req.params.id;
+      const userId = req.user._id;
+  
+      const blog = await Blog.findById(blogId);
+      if (!blog) return res.status(404).json({ error: "Blog not found" });
+  
+      const existingLike = await Like.findOne({ blogId, userId });
+  
+      if (existingLike) {
+        // If already liked, remove the like
+        await existingLike.deleteOne();
+        const likesCount = await Like.countDocuments({ blogId });
+        return res.status(200).json({ message: "Blog unliked", liked: false, likesCount });
+      } else {
+        // If not liked, add a new like
+        await Like.create({ blogId, userId });
+        const likesCount = await Like.countDocuments({ blogId });
+        return res.status(200).json({ message: "Blog liked", liked: true, likesCount });
+      }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      console.error("Error toggling like:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-};
+  };
+    
 
 
 exports.saveDraft = async (req, res) => {
@@ -416,34 +479,89 @@ exports.getAllDrafts = async (req, res) => {
 
 exports.commentOnBlog = async (req, res) => {
     try {
-        const { blogId } = req.params;
-        const { commentText } = req.body;
-
-        if (!req.user) {
-            return res.status(401).json({ error: "You must be logged in to comment" });
-        }
-
-        const blog = await Blog.findById(blogId);
-        if (!blog) {
-            return res.status(404).json({ error: "Blog not found" });
-        }
-
-        const newComment = new Comment({
-            text: commentText,
-            user: req.user._id,
-            blog: blogId
-        });
-
-        await newComment.save();
-
-        blog.comments.push(newComment._id);
-        await blog.save();
-
-        await newComment.populate("user", "name");
-
-        res.status(201).json({ message: "Comment added successfully", comment: newComment });
-
+      const { id: blogId } = req.params;
+      const { commentText, parentId } = req.body;
+  
+      if (!req.user) {
+        return res.status(401).json({ error: "You must be logged in to comment" });
+      }
+  
+      const blog = await Blog.findById(blogId);
+      if (!blog) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+  
+      const newComment = new Comment({
+        comment: commentText,
+        userId: req.user._id,
+        blogId,
+        parentId: parentId || null, // ✅ This line is the fix
+      });
+  
+      await newComment.save();
+      await newComment.populate("userId", "name");
+  
+      res.status(201).json({ message: "Comment added successfully", comment: newComment });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
+  };
+  
+  
+  exports.getCommentsForBlog = async (req, res) => {
+    try {
+      const { id: blogId } = req.params;
+  
+      const comments = await Comment.find({ blogId })
+        .populate("userId", "name");
+  
+      res.status(200).json(comments);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+  
+  exports.updateComment = async (req, res) => {
+    const { commentText } = req.body;
+    const { commentId } = req.params;
+  
+    if (!commentText) return res.status(400).json({ error: "Comment text required" });
+  
+    const updated = await Comment.findByIdAndUpdate(
+      commentId,
+      { comment: commentText },
+      { new: true }
+    );
+  
+    res.json({ message: "Comment updated", comment: updated });
+  };
+  
+  // ✅ Delete Comment
+  exports.deleteComment = async (req, res) => {
+    const { commentId } = req.params;
+  
+    try {
+      // Recursive function to delete replies
+      const deleteReplies = async (parentId) => {
+        const replies = await Comment.find({ parentId });
+  
+        for (let reply of replies) {
+          await deleteReplies(reply._id); // recursively delete nested replies
+          await Comment.findByIdAndDelete(reply._id);
+        }
+      };
+  
+      // Step 1: Delete all nested replies
+      await deleteReplies(commentId);
+  
+      // Step 2: Delete the parent comment
+      await Comment.findByIdAndDelete(commentId);
+  
+      res.json({ message: "Comment and its replies deleted successfully" });
+    } catch (error) {
+      console.error("❌ Error deleting comment:", error);
+      res.status(500).json({ error: "Failed to delete comment and replies" });
+    }
+  };
+  
+  // 🔄 Toggle Save/Unsave Blog Post

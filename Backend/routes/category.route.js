@@ -6,7 +6,10 @@ const router = express.Router();
 
 // 📌 Public Routes
 router.get("/", categoryController.getAllCategories);
-router.get("/:slug", categoryController.getBlogsByCategorySlug);
+router.get("/with-blogs", categoryController.getAllCategoriesWithBlogs); // 🔼 move above
+router.get("/:slug", categoryController.getBlogsByCategorySlug);          // 🔽 keep below
+ // ✅ New Route
+
 
 
 // 📌 Admin-Only Routes

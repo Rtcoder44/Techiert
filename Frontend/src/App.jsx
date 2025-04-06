@@ -10,6 +10,8 @@ import ManageBlog from "./pages/manageBlog";
 import "./index.css";
 import ManageCategoryPage from "./pages/manageCategoryPage";
 import CategoryPage from "./pages/CategoryPage";
+import SinglePostPage from "./pages/singlePostPage";
+import SavedPosts from "./components/singlePostComponent/savedPost";
 
 function App() {
   const { user, loading } = useAuth(); // Get user data from context
@@ -47,6 +49,10 @@ function App() {
         {/* ✅ Public Route */}
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/dashboard/category/:slug" element={<CategoryPage />} />
+        <Route path="/blog/:slug" element={<SinglePostPage />} />
+        {/* User's Routes */}
+        <Route path="/dashboard/saved-posts" element={<SavedPosts/>} />
+
       </Routes>
     </Router>
   );
