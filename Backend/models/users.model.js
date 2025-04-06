@@ -24,6 +24,12 @@ const userSchema = new mongoose.Schema({
         enum: ["admin", "user"],
         default: "user"
     },
+    savedPosts: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Blog"
+        }
+    ],
     createdAt: {
         type: Date,
         default: Date.now

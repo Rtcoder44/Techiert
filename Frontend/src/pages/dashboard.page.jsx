@@ -6,43 +6,42 @@ import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Dashboard = () => {
-  const [posts, setPosts] = useState([]);
-  const [latestPost, setLatestPost] = useState(null);
   const [postsByParentCategory, setPostsByParentCategory] = useState({});
+  const [latestPost, setLatestPost] = useState(null);
 
-  // 🛠️ Optimized API Call using useCallback
-  const fetchBlogs = useCallback(async () => {
+  const majorCategories = ["Tech Products", "Tech News", "Comparisons", "How-to Guides"];
+
+  const fetchBlogsByCategory = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/blogs`);
-      const blogArray = Array.isArray(res.data) ? res.data : res.data.blogs || res.data.data || [];
+      const res = await axios.get(`${API_BASE_URL}/api/categories/with-blogs`);
+      const data = Array.isArray(res.data) ? res.data : [];
 
-      const sortedPosts = blogArray.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-      setPosts(sortedPosts);
-      setLatestPost(sortedPosts[0]);
-
-      // ✅ Group posts by parent category only
       const grouped = {};
-      sortedPosts.forEach(post => {
-        if (!post.category || !post.category.length) return;
+      let newestPost = null;
 
-        // Get the parent category
-        const parentCategory = post.category.find(cat => !cat.parent) || { name: "Uncategorized" };
+      for (const cat of data) {
+        if (majorCategories.includes(cat.name)) {
+          const sortedBlogs = cat.blogs.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          grouped[cat.name] = sortedBlogs;
 
-        if (!grouped[parentCategory.name]) grouped[parentCategory.name] = [];
-        grouped[parentCategory.name].push(post);
-      });
+          if (!newestPost || new Date(sortedBlogs[0].createdAt) > new Date(newestPost.createdAt)) {
+            newestPost = sortedBlogs[0];
+          }
+        }
+      }
 
       setPostsByParentCategory(grouped);
+      setLatestPost(newestPost);
     } catch (err) {
-      console.error("Error fetching blogs", err);
+      console.error("Error fetching blogs by category", err);
     }
   }, []);
 
-  // 📌 Fetch Data on Mount
   useEffect(() => {
-    fetchBlogs();
-  }, [fetchBlogs]);
+    fetchBlogsByCategory();
+  }, [fetchBlogsByCategory]);
 
   return (
     <DashboardLayout>
@@ -87,7 +86,7 @@ const Dashboard = () => {
                       <h4 className="text-lg font-semibold text-[#1E293B]">{post.title}</h4>
                       <p className="text-sm text-gray-600 mt-1 line-clamp-2">{post.excerpt}</p>
 
-                      {/* 🏷️ Show Child Categories as Badges */}
+                      {/* Show only child categories as badges */}
                       <div className="flex flex-wrap gap-2 mt-3">
                         {post.category?.length ? post.category
                           .filter(cat => cat.parent) // Show only child categories as badges
@@ -101,7 +100,6 @@ const Dashboard = () => {
                           </span>
                         )}
                       </div>
-
                     </div>
                   </Link>
                 </div>

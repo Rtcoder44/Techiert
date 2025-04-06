@@ -108,5 +108,41 @@ const getBlogsByCategorySlug = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   };
+
+  // ✅ Get all categories with their blogs
+  const getAllCategoriesWithBlogs = async (req, res) => {
+    try {
+      const categories = await Category.find({}, "_id name slug");
   
-module.exports = { createCategory, getAllCategories, updateCategory, deleteCategory, getBlogsByCategorySlug };
+      const categoriesWithBlogs = await Promise.all(
+        categories.map(async (category) => {
+          if (process.env.NODE_ENV !== "production") {
+            console.log("📂 Checking category:", category.name);
+          }
+  
+          const blogs = await Blog.find({ category: category._id, status: "published" })
+            .populate("author", "name")
+            .populate("category", "name slug")
+            .populate("tags", "name slug")
+            .sort({ createdAt: -1 });
+  
+          if (process.env.NODE_ENV !== "production") {
+            console.log(`📝 Found ${blogs.length} blogs for category: ${category.name}`);
+          }
+  
+          return {
+            ...category._doc,
+            blogs,
+          };
+        })
+      );
+  
+      const filtered = categoriesWithBlogs.filter((cat) => cat.blogs.length > 0);
+  
+      res.status(200).json(filtered);
+    } catch (error) {
+      console.error("❌ Error fetching categories with blogs:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+  module.exports = { createCategory, getAllCategories, updateCategory, deleteCategory, getBlogsByCategorySlug, getAllCategoriesWithBlogs};  
