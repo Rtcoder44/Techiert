@@ -1,15 +1,31 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { FaHeart, FaFacebook, FaTwitter, FaLinkedin } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
-import CommentsSection from "../components/commentSection";
-import RelatedPosts from "../components/relatedPost";
 import DOMPurify from "dompurify";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
-import SavePostButton from "../components/savePost"; // ✅ New Import
+import SavePostButton from "../components/savePost";
+
+// ✅ Lazy-loaded Components
+const CommentsSection = lazy(() => import("../components/commentSection"));
+const RelatedPosts = lazy(() => import("../components/relatedPost"));
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// ✅ Skeleton Loader
+const PostSkeleton = () => (
+  <div className="max-w-4xl mx-auto p-6 animate-pulse">
+    <div className="h-64 bg-gray-300 rounded-xl mb-4" />
+    <div className="h-6 bg-gray-300 rounded w-3/4 mb-2" />
+    <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
+    <div className="space-y-2">
+      <div className="h-4 bg-gray-200 rounded" />
+      <div className="h-4 bg-gray-200 rounded w-5/6" />
+      <div className="h-4 bg-gray-200 rounded w-2/3" />
+    </div>
+  </div>
+);
 
 const SinglePostPage = () => {
   const { slug } = useParams();
@@ -58,7 +74,7 @@ const SinglePostPage = () => {
     }
   };
 
-  if (loading) return <div className="text-center py-20">Loading...</div>;
+  if (loading) return <PostSkeleton />;
   if (!post) return <div className="text-center py-20 text-red-600">Post not found.</div>;
 
   const sanitizedContent = DOMPurify.sanitize(post.content || "");
@@ -98,10 +114,8 @@ const SinglePostPage = () => {
             </span>
           </button>
 
-          {/* 📌 Save/Unsave Toggle */}
           <SavePostButton postId={post._id} />
 
-          {/* 🔗 Share Buttons */}
           <div className="flex gap-3">
             <a
               href={`https://facebook.com/sharer/sharer.php?u=${window.location.href}`}
@@ -134,11 +148,15 @@ const SinglePostPage = () => {
         />
 
         {/* 🔁 Related Posts */}
-        {post && <RelatedPosts currentPostId={post._id} />}
+        <Suspense fallback={<div className="text-gray-500 mt-6">Loading related posts...</div>}>
+          {post && <RelatedPosts currentPostId={post._id} />}
+        </Suspense>
 
         {/* 💬 Comments */}
         <div className="mt-10">
-          <CommentsSection postId={post._id} />
+          <Suspense fallback={<div className="text-gray-500">Loading comments...</div>}>
+            <CommentsSection postId={post._id} />
+          </Suspense>
         </div>
       </main>
     </DashboardLayout>

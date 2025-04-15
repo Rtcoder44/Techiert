@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
-import BlogEditModal from "../manageBlog/blogEditModal"; // Import the BlogEditModal component
+import BlogEditModal from "../manageBlog/blogEditModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -48,18 +48,18 @@ const BlogTable = ({ blogs, setBlogs }) => {
               <th className="border p-3 w-1/5">Category</th>
               <th className="border p-3 w-1/6">Date</th>
               <th className="border p-3 w-1/6">Status</th>
-              <th className="border p-3 w-1/6 text-center">Actions</th>
+              <th className="border p-3 w-1/4 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {blogList.map((blog) => (
               <tr key={blog._id} className="border bg-white hover:bg-gray-100 transition duration-300">
-                {/* Title with Ellipsis */}
+                {/* Title */}
                 <td className="border p-3 truncate max-w-[200px]">
                   <span className="block truncate">{blog.title}</span>
                 </td>
 
-                {/* Categories with Ellipsis */}
+                {/* Category */}
                 <td className="border p-3 truncate max-w-[180px]">
                   <span className="block truncate">
                     {Array.isArray(blog.category) && blog.category.length > 0
@@ -71,7 +71,7 @@ const BlogTable = ({ blogs, setBlogs }) => {
                 {/* Date */}
                 <td className="border p-3">{new Date(blog.createdAt).toLocaleDateString()}</td>
 
-                {/* Status with Color Badge */}
+                {/* Status */}
                 <td className="border p-3">
                   <span
                     className={`px-3 py-1 text-white rounded ${
@@ -86,28 +86,37 @@ const BlogTable = ({ blogs, setBlogs }) => {
                   </span>
                 </td>
 
-                {/* Actions */}
-                <td className="border p-3 flex justify-center gap-2">
+                {/* Actions with Analyze Link */}
+                <td className="border p-3 flex flex-col sm:flex-row justify-center items-center gap-2">
                   <button
                     onClick={() => setEditingBlog(blog)}
-                    className="px-4 py-2 bg-[#E7000B] text-white rounded hover:bg-red-700 transition duration-300"
+                    className="px-4 py-1 bg-[#E7000B] text-white rounded hover:bg-red-700 transition duration-300 text-sm"
                   >
                     Edit
                   </button>
+
                   {user?.role === "admin" && (
                     <button
                       onClick={() => handleDelete(blog._id)}
-                      className="px-4 py-2 bg-[#1E293B] text-white rounded hover:bg-gray-800 transition duration-300"
+                      className="px-4 py-1 bg-[#1E293B] text-white rounded hover:bg-gray-800 transition duration-300 text-sm"
                     >
                       Delete
                     </button>
                   )}
+
+                  <Link
+                    to={`/dashboard/analytics/blog/${blog._id}`}
+                    className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300 text-sm"
+                  >
+                    📊 Analyze
+                  </Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+
       {editingBlog && (
         <BlogEditModal
           blog={editingBlog}

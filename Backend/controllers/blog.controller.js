@@ -6,6 +6,73 @@ const slugify = require("slugify");
 const Tag = require("../models/tags.model");
 const Like = require("../models/likes.model")
 const jwt = require("jsonwebtoken");
+const SearchQuery = require("../models/searchQuery.model");
+const Category = require("../models/categories.model");
+
+
+exports.logSearchQuery = async (query, userId = null) => {
+  const existing = await SearchQuery.findOne({ query });
+
+  if (existing) {
+    existing.count += 1;
+    await existing.save();
+  } else {
+    await SearchQuery.create({ query, userId });
+  }
+};
+
+exports.searchBlogs = async (req, res) => {
+  try {
+    const { query, authorId } = req.body;
+    const userId = req.user?._id || null; // Optional: Add userId if available
+
+    if (!query || query.trim().length < 3) {
+      return res.status(400).json({ error: "Search query is too short" });
+    }
+
+    const regex = new RegExp(query, "i");
+
+    const conditions = [
+      { title: { $regex: regex } },
+      { content: { $regex: regex } },
+      { metaTitle: { $regex: regex } },
+      { metaDescription: { $regex: regex } }
+    ];
+
+    const matchedTags = await Tag.find({ name: regex });
+    const matchedTagIds = matchedTags.map(tag => tag._id);
+    if (matchedTagIds.length > 0) {
+      conditions.push({ tags: { $in: matchedTagIds } });
+    }
+
+    const matchedCategory = await Category.findOne({ name: regex });
+    if (matchedCategory) {
+      conditions.push({ category: matchedCategory._id });
+    }
+
+    if (authorId) {
+      conditions.push({ author: authorId });
+    }
+
+    const blogs = await Blog.find({ $or: conditions })
+      .populate("tags", "name")
+      .populate("category", "name")
+      .populate("author", "name");
+
+    // ✅ Only log if search returned results
+    if (blogs.length > 0) {
+      await exports.logSearchQuery(query.trim(), userId);
+    }
+
+    res.status(200).json({ results: blogs });
+  } catch (err) {
+    console.error("Error searching blogs:", err);
+    res.status(500).json({ error: "Server error while searching blogs" });
+  }
+};
+
+
+
 
 
 exports.createBlog = async (req, res) => {
@@ -80,11 +147,19 @@ exports.createBlog = async (req, res) => {
 // Get all blogs (Only show public, or private if owner/admin)
 exports.getAllBlogs = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = "", category, tags, status = "all" } = req.query;
-        
+        const {
+            page = 1,
+            limit = 10,
+            search = "",
+            category,
+            tags,
+            status = "all",
+            sort = "latest",
+        } = req.query;
+
         const query = {};
 
-        // 🔹 Default: Show all blogs (Published, Drafts, Private)
+        // 🔹 Filter by Status
         if (status === "published") {
             query.status = "published";
         } else if (status === "draft") {
@@ -93,42 +168,66 @@ exports.getAllBlogs = async (req, res) => {
             query.status = "private";
         } else {
             query.$or = [{ status: "published" }];
-            
+
+            // Show own drafts & private if logged in
             if (req.user) {
-                query.$or.push({ status: "private", author: req.user._id }, { status: "draft", author: req.user._id });
+                query.$or.push(
+                    { status: "draft", author: req.user._id },
+                    { status: "private", author: req.user._id }
+                );
             }
         }
 
-        // 🔹 Search Query
+        // 🔹 Search
         if (search) {
-            query.$and = [
-                { $or: [{ title: { $regex: search, $options: "i" } }, { content: { $regex: search, $options: "i" } }] },
-            ];
+            const searchQuery = {
+                $or: [
+                    { title: { $regex: search, $options: "i" } },
+                    { content: { $regex: search, $options: "i" } },
+                ],
+            };
+
+            if (query.$and) {
+                query.$and.push(searchQuery);
+            } else if (Object.keys(query).length > 0) {
+                query.$and = [searchQuery];
+            } else {
+                Object.assign(query, searchQuery);
+            }
         }
 
-        // 🔹 Filter by Category
-        if (category) query.category = category;
+        // 🔹 Category Filter
+        if (category) {
+            query.category = category;
+        }
 
-        // 🔹 Filter by Tags (if provided)
-        if (tags) query.tags = { $in: tags.split(",") };
+        // 🔹 Tags Filter
+        if (tags) {
+            query.tags = { $in: tags.split(",") };
+        }
 
-        // 🔹 Fetch Total Blogs Count
+        // 🔹 Sorting Options
+        let sortOption = { createdAt: -1 }; // Default: latest
+        if (sort === "oldest") sortOption = { createdAt: 1 };
+        if (sort === "popular") sortOption = { views: -1 };
+
+        // 🔹 Pagination
+        const skip = (parseInt(page) - 1) * parseInt(limit);
         const totalBlogs = await Blog.countDocuments(query);
 
-        // 🔹 Fetch Blogs with Pagination & Sorting
         const blogs = await Blog.find(query)
             .populate("author", "name")
             .populate("category", "name")
             .populate("tags", "name")
-            .limit(parseInt(limit))
-            .skip((parseInt(page) - 1) * parseInt(limit))
-            .sort({ createdAt: -1 });
+            .sort(sortOption)
+            .skip(skip)
+            .limit(parseInt(limit));
 
         res.status(200).json({
+            blogs,
             totalBlogs,
             currentPage: parseInt(page),
             totalPages: Math.ceil(totalBlogs / limit),
-            blogs,
         });
 
     } catch (error) {
@@ -136,22 +235,21 @@ exports.getAllBlogs = async (req, res) => {
     }
 };
 
+
 // Get a single blog post by ID or Slug
 exports.getBlogById = async (req, res) => {
     try {
       const { id } = req.params;
-  
       const userId = req.user?._id?.toString();
       const userRole = req.user?.role;
   
       const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
   
-      const blog = await Blog.findOneAndUpdate(
-        isValidObjectId ? { $or: [{ _id: id }, { slug: id }] } : { slug: id },
-        { $inc: { views: 1 } },
-        { new: true }
+      // First fetch the blog without incrementing views
+      const blog = await Blog.findOne(
+        isValidObjectId ? { $or: [{ _id: id }, { slug: id }] } : { slug: id }
       )
-        .populate("author", "name")
+        .populate("author", "name role")
         .populate("category", "name")
         .lean();
   
@@ -159,6 +257,7 @@ exports.getBlogById = async (req, res) => {
         return res.status(404).json({ error: "Blog not found" });
       }
   
+      // Check for private access
       if (
         blog.status === "private" &&
         userId !== blog.author._id.toString() &&
@@ -167,6 +266,12 @@ exports.getBlogById = async (req, res) => {
         return res.status(403).json({ error: "This blog is private." });
       }
   
+      // ✅ Exclude views by blog author or admin
+      if (!userId || (userId !== blog.author._id.toString() && userRole !== "admin")) {
+        await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
+      }
+  
+      // Get likes count and user liked status
       const [likesCount, userLiked] = await Promise.all([
         Like.countDocuments({ blogId: blog._id }),
         userId ? Like.exists({ blogId: blog._id, userId }) : false,
@@ -181,7 +286,7 @@ exports.getBlogById = async (req, res) => {
       res.status(500).json({ error: "Internal server error" });
     }
   };
-    
+  
   
   
 
@@ -222,87 +327,77 @@ exports.getRelatedBlogs = async (req, res) => {
 
 // Update a Blog Post (Admin or Author Only)
 exports.updateBlog = async (req, res) => {
-    try {
-        console.log("📌 Update Blog - req.user:", req.user);
-        console.log("📤 Update Blog - req.body:", req.body);
+  try {
+    const { id } = req.params;
+    let { title, category, content, status, metaTitle, metaDescription, coverImage, tags } = req.body;
 
-        const { id } = req.params;
-        let { title, category, content, status, metaTitle, metaDescription, coverImage, tags } = req.body;
-
-        console.log("🔍 Fetching blog with ID:", id);
-        const blog = await Blog.findById(id);
-        if (!blog) {
-            console.log("❌ Blog not found");
-            return res.status(404).json({ error: "Blog not found" });
-        }
-
-        if (req.user.role !== "admin" && req.user._id.toString() !== blog.author.toString()) {
-            console.log("🚫 Unauthorized update attempt by:", req.user._id);
-            return res.status(403).json({ error: "You can only update your own blogs" });
-        }
-
-        console.log("✅ Blog found, proceeding with update...");
-
-        // Validate category
-        if (category) {
-            if (typeof category === "string") category = [category];
-            if (!Array.isArray(category) || !category.every(cat => mongoose.Types.ObjectId.isValid(cat))) {
-                return res.status(400).json({ error: "Invalid category format." });
-            }
-        }
-
-        // Handle tags
-        let tagIds = [];
-        if (tags && tags.length > 0) {
-            for (let tagName of tags) {
-                let existingTag = await Tag.findOne({ name: tagName });
-                if (!existingTag) {
-                    const newTag = new Tag({ name: tagName, slug: slugify(tagName, { lower: true }) });
-                    await newTag.save();
-                    tagIds.push(newTag._id);
-                } else {
-                    tagIds.push(existingTag._id);
-                }
-            }
-        }
-
-        // Generate a new slug if title is updated
-        let uniqueSlug = blog.slug;
-        if (title && title !== blog.title) {
-            let newSlug = slugify(title, { lower: true });
-            let counter = 1;
-            while (await Blog.findOne({ slug: newSlug })) {
-                newSlug = `${slug}-${counter}`;
-                counter++;
-            }
-            uniqueSlug = newSlug;
-        }
-
-        // Update blog data
-        const updatedData = {
-            title,
-            category,
-            tags: tagIds,
-            content,
-            slug: uniqueSlug,
-            metaTitle,
-            metaDescription,
-            coverImage: req.file ? req.file.path : coverImage, // If a new file is uploaded, replace it
-            status,
-            updatedAt: Date.now(),
-        };
-
-        console.log("✏️ Updating blog with data:", updatedData);
-        const updatedBlog = await Blog.findByIdAndUpdate(id, updatedData, { new: true });
-
-        console.log("✅ Blog updated successfully:", updatedBlog);
-        res.status(200).json({ message: "Blog Updated Successfully", blog: updatedBlog });
-
-    } catch (error) {
-        console.error("❌ Error updating blog:", error);
-        res.status(500).json({ error: error.message });
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
     }
+
+    if (req.user.role !== "admin" && req.user._id.toString() !== blog.author.toString()) {
+      return res.status(403).json({ error: "You can only update your own blogs" });
+    }
+
+    // Category validation
+    if (category) {
+      if (!Array.isArray(category)) category = [category];
+      const isValid = category.every(cat => mongoose.Types.ObjectId.isValid(cat));
+      if (!isValid) return res.status(400).json({ error: "Invalid category format." });
+    }
+
+    // Tags processing
+    let tagIds = [];
+    if (tags && tags.length > 0) {
+      for (let tagName of tags) {
+        let existingTag = await Tag.findOne({ name: tagName });
+        if (!existingTag) {
+          const newTag = new Tag({ name: tagName, slug: slugify(tagName, { lower: true }) });
+          await newTag.save();
+          tagIds.push(newTag._id);
+        } else {
+          tagIds.push(existingTag._id);
+        }
+      }
+    }
+
+    // Slug generation
+    let uniqueSlug = blog.slug;
+    if (title && title !== blog.title) {
+      let originalSlug = slugify(title, { lower: true });
+      let newSlug = originalSlug;
+      let counter = 1;
+      while (await Blog.findOne({ slug: newSlug, _id: { $ne: blog._id } })) {
+        newSlug = `${originalSlug}-${counter}`;
+        counter++;
+      }
+      uniqueSlug = newSlug;
+    }
+
+    const updatedData = {
+      ...(title && { title }),
+      ...(category && { category }),
+      ...(tags && tagIds.length > 0 && { tags: tagIds }),
+      ...(content && { content }),
+      ...(metaTitle && { metaTitle }),
+      ...(metaDescription && { metaDescription }),
+      ...(uniqueSlug && { slug: uniqueSlug }),
+      ...(status && { status }),
+      ...(req.file ? { coverImage: req.file.path } : coverImage && { coverImage }),
+    };
+
+    const updatedBlog = await Blog.findByIdAndUpdate(id, updatedData, { new: true });
+
+    res.status(200).json({ message: "Blog Updated Successfully", blog: updatedBlog });
+
+  } catch (error) {
+    console.error("❌ Error updating blog:", error);
+    res.status(500).json({ error: error.message });
+  }
 };
+
+
 
 // Delete a Blog Post (Admin or Author Only)
 exports.deleteBlog = async (req, res) => {
@@ -564,4 +659,3 @@ exports.commentOnBlog = async (req, res) => {
     }
   };
   
-  // 🔄 Toggle Save/Unsave Blog Post

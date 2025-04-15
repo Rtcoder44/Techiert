@@ -1,7 +1,7 @@
 // DashboardNavbar.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContext";
 import TechiertLogo from "../techiert.logo";
 import axios from "axios";
 import { FaChevronDown, FaSearch, FaTimes } from "react-icons/fa";
@@ -54,26 +54,45 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
+      const trimmed = searchQuery.trim();
+  
+      // Only set debounced query if it's meaningful (3+ chars)
+      if (trimmed.length >= 3) {
+        setDebouncedQuery(trimmed);
+      } else {
+        setDebouncedQuery(""); // Prevent triggering search
+        setSearchResults([]);  // Also clear previous results
+      }
     }, 300);
+  
     return () => clearTimeout(handler);
   }, [searchQuery]);
-
+  
+  // Fetch search results from backend when debounced query changes
   useEffect(() => {
-    if (debouncedQuery.trim() === "") {
+    if (debouncedQuery === "") {
       setSearchResults([]);
-    } else {
-      setSearchResults(
-        categories.filter((category) =>
-          category.name.toLowerCase().includes(debouncedQuery.toLowerCase())
-        )
-      );
+      return;
     }
-  }, [debouncedQuery, categories]);
-
+  
+    axios
+      .post(`${API_BASE_URL}/api/blogs/search`, {
+        query: debouncedQuery,
+        authorId: user?.id || undefined, // Optional filter
+      })
+      .then((response) => {
+        setSearchResults(response.data.results || []);
+      })
+      .catch((error) => {
+        console.error("Error searching blogs:", error);
+      });
+  }, [debouncedQuery, user?.id]);
+  
+  // Handle search query input
   const handleSearch = (event) => {
     setSearchQuery(event.target.value);
   };
+  
 
   const structuredCategories = [
     { name: "Tech News", slug: "tech-news" },
@@ -171,7 +190,7 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
         <FaSearch className="absolute left-3 top-3 text-gray-400" />
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Search blogs..."
           className="px-10 py-2 rounded-lg bg-gray-100 text-black w-full"
           value={searchQuery}
           onChange={handleSearch}
@@ -188,10 +207,10 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
               {searchResults.map((result, index) => (
                 <li key={index} className="px-4 py-2 hover:bg-gray-200">
                   <Link
-                    to={`/dashboard/category/${result.slug}`}
+                    to={`/blog/${result.slug}`}
                     onClick={() => setSearchQuery("")}
                   >
-                    {result.name}
+                    {result.title}
                   </Link>
                 </li>
               ))}
@@ -199,6 +218,7 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
           )}
         </AnimatePresence>
       </div>
+
 
       {/* Right Section (Login Button) */}
       {!user && (
@@ -261,13 +281,14 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
                         className="px-4 py-2 hover:bg-gray-200"
                       >
                         <Link
-                          to={`/dashboard/category/${result.slug}`}
+                          to={`/blog/${result.slug}`}
                           onClick={() => setSearchQuery("")}
                         >
-                          {result.name}
+                          {result.title}
                         </Link>
                       </li>
                     ))}
+
                   </motion.ul>
                 )}
               </AnimatePresence>
