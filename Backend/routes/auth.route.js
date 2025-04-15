@@ -1,13 +1,22 @@
 const express = require("express");
+
 const {
   signup,
   login,
   logout,
   getMe,
   toggleSavePost,
-  getSavedPosts 
+  getSavedPosts,
+  getProfile,
+  updateProfile,
+  changePassword,
+  updateName,
+  updateAvatar,
+  getAllUsers,
+  updateUser,
+  deleteUser
 } = require("../controllers/auth.controller");
-const { authMiddleware } = require("../middlewares/auth.middleware");
+const { authMiddleware, adminMiddleware } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/multer");
 
 const router = express.Router();
@@ -15,11 +24,23 @@ const router = express.Router();
 // ✅ Auth Routes
 router.post("/signup", upload.single("avatar"), signup);
 router.post("/login", login);
-router.post("/logout", authMiddleware, logout); // ✅ Protect logout route  
-router.get("/me", authMiddleware, getMe); // ✅ Ensure only authenticated users can fetch their data  
+router.post("/logout", authMiddleware, logout);
+router.get("/me", authMiddleware, getMe);
 
-// save post 
+// ✅ Save Post
 router.post("/save-post/:blogId", authMiddleware, toggleSavePost);
-router.get("/saved-posts", authMiddleware, getSavedPosts)
+router.get("/saved-posts", authMiddleware, getSavedPosts);
+
+// ✅ Profile Settings
+router.get("/profile", authMiddleware, getProfile);
+router.put("/profile", authMiddleware, updateProfile);
+router.put("/change-password", authMiddleware, changePassword);
+router.put("/update-name", authMiddleware, updateName);
+router.put("/update-avatar", authMiddleware,upload.single("avatar"), updateAvatar);
+
+// user management
+router.get("/users", authMiddleware, adminMiddleware, getAllUsers);
+router.put("/users/:id", authMiddleware, adminMiddleware, updateUser);
+router.delete("/users/:id", authMiddleware, adminMiddleware, deleteUser);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContext";
 import { FaTimes } from "react-icons/fa";
 
 const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
@@ -22,16 +22,16 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
       ? [
           { name: "Dashboard", path: "/dashboard" },
           { name: "Manage Blog", path: "/dashboard/manage-blogs" },
-          { name: "Manage Users", path: "/dashboard/users" },
+          { name: "Manage Users", path: "/dashboard/manage-users" },
           { name: "Analytics", path: "/dashboard/analytics" },
-          { name: "Settings", path: "/dashboard/settings" },
+          { name: "Profile", path: "/dashboard/profile-settings" },
           { name: "Category", path: "/dashboard/manage-category" },
         ]
       : [
           { name: "Dashboard", path: "/dashboard" },
           { name: "Saved Posts", path: "/dashboard/saved-posts" },
-          { name: "My Comments", path: "/dashboard/comments" },
-          { name: "Profile", path: "/dashboard/profile" },
+          // { name: "My Comments", path: "/dashboard/comments" },
+          { name: "Profile", path: "/dashboard/profile-settings" },
         ];
 
   return (
