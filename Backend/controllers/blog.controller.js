@@ -324,6 +324,26 @@ exports.getRelatedBlogs = async (req, res) => {
     }
 };
 
+// Get Latest Published Blogs
+exports.getLatestBlogs = async (req, res) => {
+  try {
+    const { limit = 5 } = req.query; // Default: 5 blogs
+
+    const latestBlogs = await Blog.find({ status: "published" })
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .populate("author", "name")
+      .populate("category", "name")
+      .populate("tags", "name");
+
+    res.status(200).json({ success: true, blogs: latestBlogs });
+  } catch (error) {
+    console.error("❌ Error fetching latest blogs:", error);
+    res.status(500).json({ error: "Failed to fetch latest blogs" });
+  }
+};
+
+
 
 // Update a Blog Post (Admin or Author Only)
 exports.updateBlog = async (req, res) => {

@@ -1,8 +1,12 @@
 export default {
-  darkMode: "class", // ← add this line
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        playfair: ['"Playfair Display"', 'serif'],
+      },
+    },
   },
   plugins: [],
 };

@@ -24,6 +24,7 @@ router.get("/", blogController.getAllBlogs);
 router.get("/blog/:id",optionalAuthMiddleware, blogController.getBlogById); // 👈 updated to /blog/:id for clarity
 router.get("/comments/:id", blogController.getCommentsForBlog);
 router.get("/related/:id", blogController.getRelatedBlogs);
+router.get("/latest", blogController.getLatestBlogs);
 router.post("/search", blogController.searchBlogs);
 
 

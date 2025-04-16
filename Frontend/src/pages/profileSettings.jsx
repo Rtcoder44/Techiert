@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authContext";
 import EditName from "../components/userProfileComponents/editName";
 import UpdateProfilePicture from "../components/userProfileComponents/updateProfilePicture";
 import ChangePassword from "../components/auth/changePassword";

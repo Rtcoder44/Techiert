@@ -1,6 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
-import "../../styles/auth.css"; // Ensuring the CSS is applied properly
+import "../../styles/auth.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ForgotPasswordForm = () => {
   const [email, setEmail] = useState("");
@@ -16,7 +18,7 @@ const ForgotPasswordForm = () => {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:5000/api/auth/forgot-password",
+        `${API_BASE_URL}/api/auth/forgot-password`,
         { email }
       );
       setMessage(data.message);
@@ -31,10 +33,10 @@ const ForgotPasswordForm = () => {
     <div className="auth-container">
       <div className="auth-box">
         <h2 className="auth-title">Forgot Password</h2>
-        
+
         {message && <p className="auth-success">{message}</p>}
         {error && <p className="error-text">{error}</p>}
-        
+
         <form className="auth-form space-y-4" onSubmit={handleSubmit}>
           <div className="input-group">
             <input
@@ -47,7 +49,11 @@ const ForgotPasswordForm = () => {
             />
           </div>
 
-          <button type="submit" className="auth-button" disabled={loading}>
+          <button
+            type="submit"
+            className="auth-button"
+            disabled={loading || email.trim() === ""}
+          >
             {loading ? "Sending..." : "Send Reset Link"}
           </button>
         </form>

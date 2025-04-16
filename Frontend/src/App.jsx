@@ -17,6 +17,10 @@ import ManageUsers from "./pages/manageUsers";
 import AnalyticsPage from "./pages/analyticsPage";
 // import PostAnalyticsPage from "./pages/postAnalyticsPage";
 import SingleBlogAnalytics from "./pages/singleBlogAnalytics";
+import PrivacyPolicy from "./pages/legalPages/privacyPolicy";
+import TermsOfService from "./pages/legalPages/termOfService";
+import Contact from "./pages/legalPages/contact";
+import About from "./pages/legalPages/aboutUsPage";
 
 
 function App() {
@@ -72,6 +76,11 @@ function App() {
         {/* User's Routes */}
         <Route path="/dashboard/saved-posts" element={<SavedPosts/>} />
         <Route path="/dashboard/profile-settings" element={<ProfileSettings />} />
+        {/* Legal Routes */}
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/about" element={<About />} />
 
       </Routes>
     </Router>
