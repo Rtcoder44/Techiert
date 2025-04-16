@@ -2,8 +2,15 @@ const User = require("../models/users.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Blog = require("../models/blogs.model");
+const { google } = require("googleapis");
+const nodemailer = require("nodemailer");
+const Contact = require("../models/contacts.model");
+const validator = require("validator");
+const crypto = require("crypto");
+
 
 const isProduction = process.env.NODE_ENV === "production";
+
 
 // ✅ Generate JWT Token
 const generateToken = (user) => {
@@ -295,6 +302,123 @@ exports.updateName = async (req, res) => {
   }
 };
 
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user)
+      return res.status(400).json({ error: "User not found" });
+
+    // Generate raw and hashed tokens
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    // Set token and expiration
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+    await user.save();
+
+    // Email transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        type: "OAuth2",
+        user: process.env.EMAIL,
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+      },
+    });
+
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
+
+    const mailOptions = {
+      from: `"Techiert" <${process.env.EMAIL}>`,
+      to: user.email,
+      subject: "Reset Your Password",
+      html: `
+        <p>Hello ${user.name || "User"},</p>
+        <p>Click the link below to reset your password:</p>
+        <a href="${resetUrl}" style="color:#1D4ED8;">Reset Password</a>
+        <p>This link will expire in 15 minutes.</p>
+        <p>If the link doesn't work, copy and paste this into your browser:</p>
+        <p>${resetUrl}</p>
+        <hr />
+        <p>— The Techiert Team</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "✅ Password reset link sent to your email" });
+  } catch (error) {
+    console.error("❌ Error sending reset email:", error);
+    res.status(500).json({ error: "Something went wrong. Try again later." });
+  }
+};
+
+ 
+ // ✅ Reset Password
+ 
+ exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res.status(400).json({ error: "Invalid or expired token" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    // Optional: Send confirmation email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        type: "OAuth2",
+        user: process.env.EMAIL,
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Techiert" <${process.env.EMAIL}>`,
+      to: user.email,
+      subject: "Password Changed Successfully",
+      html: `
+        <p>Hello ${user.name || "User"},</p>
+        <p>Your password was successfully changed.</p>
+        <p>If you did not perform this action, please contact support immediately.</p>
+        <hr />
+        <p>— The Techiert Team</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "✅ Password reset successful" });
+  } catch (error) {
+    console.error("❌ Reset password error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
 // controllers/userController.js
 exports.updateAvatar = async (req, res) => {
   try {
@@ -372,4 +496,104 @@ exports.getSavedPosts = async (req, res) => {
   }
 };
 
+//contact us form 
 
+// OAuth2 config
+const oAuth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "https://developers.google.com/oauthplayground"
+);
+
+oAuth2Client.setCredentials({
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+});
+
+async function sendContactEmail({ name, email, message }) {
+  const accessToken = await oAuth2Client.getAccessToken();
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: process.env.EMAIL,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+      accessToken: accessToken.token,
+    },
+  });
+
+  // Email to Admin
+  const adminMailOptions = {
+    from: `"${name}" <${email}>`,
+    to: process.env.EMAIL,
+    subject: "New Contact Form Submission",
+    html: `
+      <h3>New Message from Contact Form</h3>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Message:</strong></p>
+      <p>${message}</p>
+    `,
+  };
+
+  // Thank-you Email to User
+  const userMailOptions = {
+    from: `"Techiert Team" <${process.env.EMAIL}>`,
+    to: email,
+    subject: "Thanks for contacting Techiert!",
+    html: `
+      <p>Hi ${name},</p>
+      <p>Thanks for reaching out to us. We'll get back to you as soon as possible.</p>
+      <p><strong>Your Message:</strong></p>
+      <blockquote>${message}</blockquote>
+      <br>
+      <p>Regards,<br>Techiert Team</p>
+    `,
+  };
+
+  await transporter.sendMail(adminMailOptions);
+  await transporter.sendMail(userMailOptions);
+}
+
+// 📨 Main form handler
+exports.submitContactForm = async (req, res) => {
+  try {
+    let { name, email, message } = req.body;
+
+    // Validate fields
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, error: "All fields are required." });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ success: false, error: "Invalid email address." });
+    }
+
+    // Sanitize input
+    name = validator.escape(name.trim());
+    email = validator.normalizeEmail(email);
+    message = validator.escape(message.trim());
+
+    // Save to DB
+    const contactMessage = new Contact({ name, email, message });
+    await contactMessage.save();
+
+    // Async email send
+    sendContactEmail({ name, email, message }).catch((emailErr) =>
+      console.error("❌ Email sending failed:", emailErr)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Message received! We'll get back to you shortly.",
+    });
+  } catch (error) {
+    console.error("❌ Error in submitContactForm:", error);
+    res.status(500).json({
+      success: false,
+      error: "Something went wrong. Please try again later.",
+    });
+  }
+};

@@ -1,4 +1,5 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 
 const {
   signup,
@@ -14,18 +15,30 @@ const {
   updateAvatar,
   getAllUsers,
   updateUser,
-  deleteUser
+  deleteUser,
+  forgotPassword,
+  resetPassword,
+  submitContactForm,
 } = require("../controllers/auth.controller");
 const { authMiddleware, adminMiddleware } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/multer");
 
 const router = express.Router();
 
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 contact requests
+  message: { success: false, error: "Too many messages. Please try again later." },
+});
+
 // ✅ Auth Routes
 router.post("/signup", upload.single("avatar"), signup);
 router.post("/login", login);
 router.post("/logout", authMiddleware, logout);
 router.get("/me", authMiddleware, getMe);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
+router.post("/contact", contactLimiter, submitContactForm);
 
 // ✅ Save Post
 router.post("/save-post/:blogId", authMiddleware, toggleSavePost);
