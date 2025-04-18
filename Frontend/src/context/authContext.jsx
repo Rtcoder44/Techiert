@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 
 const AuthContext = createContext();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -11,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/api/auth/me", {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
         withCredentials: true, // ✅ Ensures cookies are sent
       });
       setUser(response.data.data);
@@ -31,7 +33,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${API_BASE_URL}/api/auth/login`,
         credentials,
         { withCredentials: true }
       );
@@ -49,7 +51,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      await axios.post("http://localhost:5000/api/auth/logout", {}, { withCredentials: true });
+      await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, { withCredentials: true });
       setUser(null); // ✅ Remove user on logout
     } catch (error) {
       console.error("❌ Logout failed:", error);

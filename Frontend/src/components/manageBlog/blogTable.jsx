@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContext";
 import BlogEditModal from "../manageBlog/blogEditModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
