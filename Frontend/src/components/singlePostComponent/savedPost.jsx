@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContext";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../dashboard/dashboardLayout";
 import { FaRegFolderOpen } from "react-icons/fa6";
