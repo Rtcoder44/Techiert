@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "../context/authContext";
 import { motion } from "framer-motion";
 import { pageview } from "../utils/gtag";
-import DashboardLayout from "../components/dashboard/DashboardLayout";  // Assuming you have a DashboardLayout component
+import DashboardLayout from "../components/dashboard/dashboardLayout";  // Assuming you have a DashboardLayout component
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 

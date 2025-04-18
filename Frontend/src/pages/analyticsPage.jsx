@@ -7,7 +7,7 @@ import FilterComponent from "../components/AnalyticsComponents/filterComponent";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useAuth } from "../context/authContext";
 import { pageview, event } from "../utils/gtag";
-import DashboardLayout from "../components/dashboard/DashboardLayout";
+import DashboardLayout from "../components/dashboard/dashboardLayout";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 

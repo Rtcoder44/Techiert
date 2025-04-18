@@ -4,7 +4,7 @@ import axios from "axios";
 import { FaHeart, FaFacebook, FaTwitter, FaLinkedin } from "react-icons/fa";
 import { useAuth } from "../context/authContext";
 import DOMPurify from "dompurify";
-import DashboardLayout from "../components/dashboard/DashboardLayout";
+import DashboardLayout from "../components/dashboard/dashboardLayout";
 import SavePostButton from "../components/savePost";
 
 const CommentsSection = lazy(() => import("../components/commentSection"));

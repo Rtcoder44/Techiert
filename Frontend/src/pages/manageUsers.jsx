@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../context/authContext";
-import DashboardLayout from "../components/dashboard/DashboardLayout";
+import DashboardLayout from "../components/dashboard/dashboardLayout";
 
 const USERS_PER_PAGE = 10;
 
