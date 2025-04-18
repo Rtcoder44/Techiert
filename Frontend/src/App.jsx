@@ -19,7 +19,7 @@ import DashboardPage from "./pages/dashboard.page";
 import CreatePostPage from "./pages/createPostPage";
 import ManageBlog from "./pages/manageBlog";
 import ManageCategoryPage from "./pages/manageCategoryPage";
-import CategoryPage from "./pages/CategoryPage";
+import CategoryPage from "./pages/categoryPage";
 import SinglePostPage from "./pages/singlePostPage";
 import SavedPosts from "./components/singlePostComponent/savedPost";
 import ProfileSettings from "./pages/profileSettings";
