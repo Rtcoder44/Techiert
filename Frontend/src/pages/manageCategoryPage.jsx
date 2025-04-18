@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { FaTrash, FaEdit, FaBars } from "react-icons/fa";
 import axios from "axios";
 import DashboardSidebar from "../components/dashboard/dashboardSidebar";
-import { useAuth } from "../context/AuthContext"; // ✅ Import Auth Context
+import { useAuth } from "../context/authContext"; // ✅ Import Auth Context
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
