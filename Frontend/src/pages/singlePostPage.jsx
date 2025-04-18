@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from "react";
+import React, { useEffect, useState, lazy, Suspense, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { FaHeart, FaFacebook, FaTwitter, FaLinkedin } from "react-icons/fa";
@@ -7,23 +7,32 @@ import DOMPurify from "dompurify";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import SavePostButton from "../components/savePost";
 
-// ✅ Lazy-loaded Components
 const CommentsSection = lazy(() => import("../components/commentSection"));
 const RelatedPosts = lazy(() => import("../components/relatedPost"));
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// ✅ Skeleton Loader
 const PostSkeleton = () => (
-  <div className="max-w-4xl mx-auto p-6 animate-pulse">
-    <div className="h-64 bg-gray-300 rounded-xl mb-4" />
-    <div className="h-6 bg-gray-300 rounded w-3/4 mb-2" />
-    <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
+  <div className="max-w-4xl mx-auto p-6 animate-pulse space-y-4">
+    <div className="h-64 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded-xl mb-6" />
+    <div className="h-6 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-3/4" />
+    <div className="h-4 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-1/2" />
     <div className="space-y-2">
-      <div className="h-4 bg-gray-200 rounded" />
-      <div className="h-4 bg-gray-200 rounded w-5/6" />
-      <div className="h-4 bg-gray-200 rounded w-2/3" />
+      {[...Array(3)].map((_, i) => (
+        <div
+          key={i}
+          className={`h-4 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded ${
+            i === 1 ? "w-5/6" : i === 2 ? "w-2/3" : "w-full"
+          }`}
+        />
+      ))}
     </div>
+  </div>
+);
+
+const Spinner = () => (
+  <div className="flex justify-center items-center py-6">
+    <div className="w-10 h-10 border-4 border-blue-300 border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
@@ -36,41 +45,40 @@ const SinglePostPage = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const fetchPost = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/api/blogs/blog/${slug}`, {
+        withCredentials: true,
+      });
+
+      setPost(data);
+      setLikeCount(data.likesCount || 0);
+      setLiked(Boolean(data.isLikedByUser));
+    } catch (_) {
+      setPost(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/api/blogs/blog/${slug}`, {
-          withCredentials: true,
-        });
-
-        const data = res.data;
-        setPost(data);
-        setLikeCount(data.likesCount || 0);
-        setLiked(Boolean(data.isLikedByUser));
-      } catch (error) {
-        console.error("❌ Error fetching blog post:", error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPost();
-  }, [slug, user]);
+  }, [fetchPost]);
 
   const handleLike = async () => {
     if (!user) return alert("Please login to like the post.");
 
     try {
-      const res = await axios.post(
+      const { data } = await axios.post(
         `${API_BASE_URL}/api/blogs/${post._id}/like`,
         {},
         { withCredentials: true }
       );
 
-      setLiked(res.data.liked);
-      setLikeCount(res.data.likesCount);
-    } catch (error) {
-      console.error("Error liking the post:", error.message);
+      setLiked(data.liked);
+      setLikeCount(data.likesCount);
+    } catch (_) {
+      // Handle error silently or use toast
     }
   };
 
@@ -141,20 +149,17 @@ const SinglePostPage = () => {
           </div>
         </div>
 
-        {/* 📝 Blog Content */}
         <div
           className="prose prose-lg max-w-full text-[#1E293B] prose-headings:text-[#E7000B] prose-img:rounded-lg prose-a:text-blue-600 prose-a:underline"
           dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
 
-        {/* 🔁 Related Posts */}
-        <Suspense fallback={<div className="text-gray-500 mt-6">Loading related posts...</div>}>
-          {post && <RelatedPosts currentPostId={post._id} />}
+        <Suspense fallback={<Spinner />}>
+          <RelatedPosts currentPostId={post._id} />
         </Suspense>
 
-        {/* 💬 Comments */}
         <div className="mt-10">
-          <Suspense fallback={<div className="text-gray-500">Loading comments...</div>}>
+          <Suspense fallback={<Spinner />}>
             <CommentsSection postId={post._id} />
           </Suspense>
         </div>
