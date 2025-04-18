@@ -2,7 +2,7 @@ import React, { useEffect, useState, lazy, Suspense, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { FaHeart, FaFacebook, FaTwitter, FaLinkedin } from "react-icons/fa";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authContext";
 import DOMPurify from "dompurify";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import SavePostButton from "../components/savePost";

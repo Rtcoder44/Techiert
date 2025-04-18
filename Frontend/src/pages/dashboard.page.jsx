@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import DashboardLayout from "../components/dashboard/dashboardLayout";
+import DashboardLayout from "../components/dashboard/DashboardLayout";
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;

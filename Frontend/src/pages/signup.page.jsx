@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../styles/auth.css"; // Import styles
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ const Signup = () => {
         formDataToSend.append("avatar", formData.avatar); // Append avatar file
       }
 
-      const response = await axios.post("http://localhost:5000/api/auth/signup", formDataToSend, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, formDataToSend, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

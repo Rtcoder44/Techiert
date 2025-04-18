@@ -4,7 +4,7 @@
 
 /* 🌟 Global styles for consistent design */
 body {
-  @apply bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+  /* @apply bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200; */
   font-family: 'Inter', sans-serif;
 }
 
@@ -24,6 +24,6 @@ body {
 }
 
 /* 🌟 Smooth transitions for UI */
-* {
+/* * {
   @apply transition-all duration-200;
-}
+} */
