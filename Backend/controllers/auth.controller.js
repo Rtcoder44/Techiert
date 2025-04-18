@@ -1,6 +1,6 @@
 const User = require("../models/users.model");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const Blog = require("../models/blogs.model");
 const { google } = require("googleapis");
 const nodemailer = require("nodemailer");
