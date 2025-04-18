@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaBookmark } from "react-icons/fa";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
