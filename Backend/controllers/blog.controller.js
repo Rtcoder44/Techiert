@@ -8,285 +8,270 @@ const Like = require("../models/likes.model")
 const jwt = require("jsonwebtoken");
 const SearchQuery = require("../models/searchQuery.model");
 const Category = require("../models/categories.model");
-
-
-exports.logSearchQuery = async (query, userId = null) => {
-  const existing = await SearchQuery.findOne({ query });
-
-  if (existing) {
-    existing.count += 1;
-    await existing.save();
-  } else {
-    await SearchQuery.create({ query, userId });
-  }
-};
-
-exports.searchBlogs = async (req, res) => {
-  try {
-    const { query, authorId } = req.body;
-    const userId = req.user?._id || null; // Optional: Add userId if available
-
-    if (!query || query.trim().length < 3) {
-      return res.status(400).json({ error: "Search query is too short" });
-    }
-
-    const regex = new RegExp(query, "i");
-
-    const conditions = [
-      { title: { $regex: regex } },
-      { content: { $regex: regex } },
-      { metaTitle: { $regex: regex } },
-      { metaDescription: { $regex: regex } }
-    ];
-
-    const matchedTags = await Tag.find({ name: regex });
-    const matchedTagIds = matchedTags.map(tag => tag._id);
-    if (matchedTagIds.length > 0) {
-      conditions.push({ tags: { $in: matchedTagIds } });
-    }
-
-    const matchedCategory = await Category.findOne({ name: regex });
-    if (matchedCategory) {
-      conditions.push({ category: matchedCategory._id });
-    }
-
-    if (authorId) {
-      conditions.push({ author: authorId });
-    }
-
-    const blogs = await Blog.find({ $or: conditions })
-      .populate("tags", "name")
-      .populate("category", "name")
-      .populate("author", "name");
-
-    // ✅ Only log if search returned results
-    if (blogs.length > 0) {
-      await exports.logSearchQuery(query.trim(), userId);
-    }
-
-    res.status(200).json({ results: blogs });
-  } catch (err) {
-    console.error("Error searching blogs:", err);
-    res.status(500).json({ error: "Server error while searching blogs" });
-  }
-};
-
-
-
+const redisClient = require("../utils/redisClient");
 
 
 exports.createBlog = async (req, res) => {
-    try {
-        console.log("📌 req.user:", req.user);
-        console.log("📤 req.body:", req.body);
-
-        if (!req.user || !req.user._id) {
-            return res.status(401).json({ error: "Unauthorized. Please log in to create a blog." });
-        }
-
-        let { title, category, content, status = "published", metaTitle, metaDescription, coverImage, tags } = req.body;
-
-        if (!title || !category || !content || !metaTitle || !metaDescription) {
-            return res.status(400).json({ error: "All fields are required." });
-        }
-
-        if (typeof category === "string") category = [category];
-
-        if (!Array.isArray(category) || !category.every(cat => mongoose.Types.ObjectId.isValid(cat))) {
-            return res.status(400).json({ error: "Invalid category format." });
-        }
-
-        let tagIds = [];
-        if (tags && tags.length > 0) {
-            for (let tagName of tags) {
-                let existingTag = await Tag.findOne({ name: tagName });
-
-                if (!existingTag) {
-                    const newTag = new Tag({ name: tagName, slug: slugify(tagName, { lower: true }) });
-                    await newTag.save();
-                    tagIds.push(newTag._id);
-                } else {
-                    tagIds.push(existingTag._id);
-                }
-            }
-        }
-
-        let slug = slugify(title, { lower: true });
-        let uniqueSlug = slug;
-        let counter = 1;
-
-        while (await Blog.findOne({ slug: uniqueSlug })) {
-            uniqueSlug = `${slug}-${counter}`;
-            counter++;
-        }
-
-        const newBlog = new Blog({
-            title,
-            category,
-            tags: tagIds,
-            content,
-            slug: uniqueSlug,
-            metaTitle,
-            metaDescription,
-            coverImage,
-            author: req.user._id,
-            status,
-            permalink: `/blog/${uniqueSlug}`,
-        });
-
-        await newBlog.save();
-
-        res.status(201).json({ success: true, message: `Blog ${status} successfully`, blog: newBlog });
-
-    } catch (error) {
-        console.error("❌ Error creating blog:", error);
-        res.status(500).json({ error: "Internal server error." });
+  try {
+    // Ensure the user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ error: "Unauthorized. Please log in to create a blog." });
     }
-};
 
+    let { title, category, content, status = "published", metaTitle, metaDescription, coverImage, tags } = req.body;
+
+    // Validate required fields
+    if (!title || !category || !content || !metaTitle || !metaDescription) {
+      return res.status(400).json({ error: "All fields are required." });
+    }
+
+    // Ensure category is an array and contains valid MongoDB ObjectIds
+    if (typeof category === "string") category = [category];
+    if (!Array.isArray(category) || !category.every(cat => mongoose.Types.ObjectId.isValid(cat))) {
+      return res.status(400).json({ error: "Invalid category format." });
+    }
+
+    // Handle tags and ensure they're valid
+    let tagIds = [];
+    if (tags && tags.length > 0) {
+      for (let tagName of tags) {
+        let existingTag = await Tag.findOne({ name: tagName });
+        if (!existingTag) {
+          // Create new tag if it doesn't exist
+          const newTag = new Tag({ name: tagName, slug: slugify(tagName, { lower: true }) });
+          await newTag.save();
+          tagIds.push(newTag._id);
+        } else {
+          tagIds.push(existingTag._id);
+        }
+      }
+    }
+
+    // Generate slug for the blog title and ensure it's unique
+    let slug = slugify(title, { lower: true });
+    let uniqueSlug = slug;
+    let counter = 1;
+    while (await Blog.findOne({ slug: uniqueSlug })) {
+      uniqueSlug = `${slug}-${counter}`;
+      counter++;
+    }
+
+    // SEO meta title and description fallback mechanism
+    const seoMetaTitle = metaTitle || `${title} - Blog | YourSiteName`;  // Use default SEO title if not provided
+    const seoMetaDescription = metaDescription || content.slice(0, 160);  // Fallback to first 160 chars of content if metaDescription is missing
+
+    // Create the blog post
+    const newBlog = new Blog({
+      title,
+      category,
+      tags: tagIds,
+      content,
+      slug: uniqueSlug,
+      metaTitle: seoMetaTitle,
+      metaDescription: seoMetaDescription,
+      coverImage,
+      author: req.user._id,
+      status,
+      permalink: `/blog/${uniqueSlug}`,  // Ensure the permalink is SEO-friendly
+    });
+
+    // Save the new blog
+    await newBlog.save();
+
+    // Respond with success message
+    res.status(201).json({
+      success: true,
+      message: `Blog ${status} successfully`,
+      blog: newBlog,
+    });
+
+  } catch (error) {
+    console.error("❌ Error creating blog:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
 // Get all blogs (Only show public, or private if owner/admin)
 exports.getAllBlogs = async (req, res) => {
-    try {
-        const {
-            page = 1,
-            limit = 10,
-            search = "",
-            category,
-            tags,
-            status = "all",
-            sort = "latest",
-        } = req.query;
+  try {
+      const {
+          page = 1,
+          limit = 10,
+          search = "",
+          category,
+          tags,
+          status = "all",
+          sort = "latest",
+      } = req.query;
 
-        const query = {};
+      const safePage = Math.max(1, parseInt(page));
+      const safeLimit = Math.min(50, parseInt(limit)); // Prevent abuse
+      const userId = req.user?._id?.toString() || "guest";
 
-        // 🔹 Filter by Status
-        if (status === "published") {
-            query.status = "published";
-        } else if (status === "draft") {
-            query.status = "draft";
-        } else if (status === "private") {
-            query.status = "private";
-        } else {
-            query.$or = [{ status: "published" }];
+      // 🔐 Cache Key: unique per user + filters
+      const cacheKey = `blogs:${userId}:${safePage}:${safeLimit}:${search}:${category}:${tags}:${status}:${sort}`;
+      const cachedData = await redisClient.get(cacheKey);
 
-            // Show own drafts & private if logged in
-            if (req.user) {
-                query.$or.push(
-                    { status: "draft", author: req.user._id },
-                    { status: "private", author: req.user._id }
-                );
-            }
-        }
+      if (cachedData) {
+          return res.status(200).json(JSON.parse(cachedData));
+      }
 
-        // 🔹 Search
-        if (search) {
-            const searchQuery = {
-                $or: [
-                    { title: { $regex: search, $options: "i" } },
-                    { content: { $regex: search, $options: "i" } },
-                ],
-            };
+      const query = {};
 
-            if (query.$and) {
-                query.$and.push(searchQuery);
-            } else if (Object.keys(query).length > 0) {
-                query.$and = [searchQuery];
-            } else {
-                Object.assign(query, searchQuery);
-            }
-        }
+      // 🔹 Status Filter
+      if (status === "published") {
+          query.status = "published";
+      } else if (status === "draft") {
+          query.status = "draft";
+      } else if (status === "private") {
+          query.status = "private";
+      } else {
+          query.$or = [{ status: "published" }];
+          if (req.user) {
+              query.$or.push(
+                  { status: "draft", author: req.user._id },
+                  { status: "private", author: req.user._id }
+              );
+          }
+      }
 
-        // 🔹 Category Filter
-        if (category) {
-            query.category = category;
-        }
+      // 🔹 Search Filter
+      if (search) {
+          const searchQuery = {
+              $or: [
+                  { title: { $regex: search, $options: "i" } },
+                  { content: { $regex: search, $options: "i" } },
+              ],
+          };
 
-        // 🔹 Tags Filter
-        if (tags) {
-            query.tags = { $in: tags.split(",") };
-        }
+          if (query.$and) {
+              query.$and.push(searchQuery);
+          } else if (Object.keys(query).length > 0) {
+              query.$and = [searchQuery];
+          } else {
+              Object.assign(query, searchQuery);
+          }
+      }
 
-        // 🔹 Sorting Options
-        let sortOption = { createdAt: -1 }; // Default: latest
-        if (sort === "oldest") sortOption = { createdAt: 1 };
-        if (sort === "popular") sortOption = { views: -1 };
+      // 🔹 Category Filter
+      if (category) {
+          query.category = category;
+      }
 
-        // 🔹 Pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const totalBlogs = await Blog.countDocuments(query);
+      // 🔹 Tags Filter
+      if (tags) {
+          query.tags = { $in: tags.split(",").map(tag => tag.trim()) };
+      }
 
-        const blogs = await Blog.find(query)
-            .populate("author", "name")
-            .populate("category", "name")
-            .populate("tags", "name")
-            .sort(sortOption)
-            .skip(skip)
-            .limit(parseInt(limit));
+      // 🔹 Sorting
+      let sortOption = { createdAt: -1 }; // Default: latest
+      if (sort === "oldest") sortOption = { createdAt: 1 };
+      if (sort === "popular") sortOption = { views: -1 };
 
-        res.status(200).json({
-            blogs,
-            totalBlogs,
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(totalBlogs / limit),
-        });
+      const skip = (safePage - 1) * safeLimit;
 
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+      // 🔹 Fetch Data
+      const [blogs, totalBlogs] = await Promise.all([
+          Blog.find(query)
+              .populate("author", "name")
+              .populate("category", "name")
+              .populate("tags", "name")
+              .sort(sortOption)
+              .skip(skip)
+              .limit(safeLimit),
+          Blog.countDocuments(query),
+      ]);
+
+      const response = {
+          blogs,
+          totalBlogs,
+          currentPage: safePage,
+          totalPages: Math.ceil(totalBlogs / safeLimit),
+      };
+
+      // 🔹 Cache Result for 60 seconds
+      await redisClient.setex(cacheKey, 60, JSON.stringify(response));
+
+      res.status(200).json(response);
+  } catch (error) {
+      res.status(500).json({ error: "Server error while fetching blogs." });
+  }
 };
+
 
 
 // Get a single blog post by ID or Slug
 exports.getBlogById = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user?._id?.toString();
-      const userRole = req.user?.role;
-  
-      const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
-  
-      // First fetch the blog without incrementing views
-      const blog = await Blog.findOne(
-        isValidObjectId ? { $or: [{ _id: id }, { slug: id }] } : { slug: id }
-      )
-        .populate("author", "name role")
-        .populate("category", "name")
-        .lean();
-  
-      if (!blog) {
-        return res.status(404).json({ error: "Blog not found" });
-      }
-  
-      // Check for private access
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id?.toString();
+    const userRole = req.user?.role;
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
+    const cacheKey = isValidObjectId ? `blog:${id}` : `slug:${id}`;
+
+    // ✅ Try Redis Cache First
+    const cachedBlog = await redisClient.get(cacheKey);
+    if (cachedBlog) {
+      const parsed = JSON.parse(cachedBlog);
+
+      // ✅ Re-check private access since user may vary
       if (
-        blog.status === "private" &&
-        userId !== blog.author._id.toString() &&
+        parsed.status === "private" &&
+        userId !== parsed.author._id.toString() &&
         userRole !== "admin"
       ) {
         return res.status(403).json({ error: "This blog is private." });
       }
-  
-      // ✅ Exclude views by blog author or admin
-      if (!userId || (userId !== blog.author._id.toString() && userRole !== "admin")) {
-        await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
-      }
-  
-      // Get likes count and user liked status
-      const [likesCount, userLiked] = await Promise.all([
-        Like.countDocuments({ blogId: blog._id }),
-        userId ? Like.exists({ blogId: blog._id, userId }) : false,
-      ]);
-  
-      blog.likesCount = likesCount;
-      blog.isLikedByUser = Boolean(userLiked);
-  
-      res.status(200).json(blog);
-    } catch (error) {
-      console.error("❌ Error fetching blog:", error);
-      res.status(500).json({ error: "Internal server error" });
+
+      return res.status(200).json({
+        ...parsed,
+        isLikedByUser: userId
+          ? Boolean(await Like.exists({ blogId: parsed._id, userId }))
+          : false,
+      });
     }
-  };
-  
+
+    // 🔍 Fetch fresh from DB
+    const blog = await Blog.findOne(
+      isValidObjectId ? { $or: [{ _id: id }, { slug: id }] } : { slug: id }
+    )
+      .populate("author", "name role")
+      .populate("category", "name")
+      .lean();
+
+    if (!blog) return res.status(404).json({ error: "Blog not found" });
+
+    if (
+      blog.status === "private" &&
+      userId !== blog.author._id.toString() &&
+      userRole !== "admin"
+    ) {
+      return res.status(403).json({ error: "This blog is private." });
+    }
+
+    // ✅ Increase views if not author/admin
+    if (!userId || (userId !== blog.author._id.toString() && userRole !== "admin")) {
+      await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
+    }
+
+    const [likesCount, userLiked] = await Promise.all([
+      Like.countDocuments({ blogId: blog._id }),
+      userId ? Like.exists({ blogId: blog._id, userId }) : false,
+    ]);
+
+    blog.likesCount = likesCount;
+    blog.isLikedByUser = Boolean(userLiked);
+
+    // ✅ Cache the result (excluding isLikedByUser which is user-specific)
+    const cacheData = { ...blog };
+    delete cacheData.isLikedByUser;
+
+    await redisClient.set(cacheKey, JSON.stringify(cacheData), "EX", 60 * 5); // 5 minutes
+
+    return res.status(200).json(blog);
+  } catch (_) {
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
   
   
 
@@ -437,31 +422,37 @@ exports.deleteBlog = async (req, res) => {
 };
 // Like or Unlike a Blog Post (User Only)
 exports.likeBlog = async (req, res) => {
-    try {
-      const blogId = req.params.id;
-      const userId = req.user._id;
-  
-      const blog = await Blog.findById(blogId);
-      if (!blog) return res.status(404).json({ error: "Blog not found" });
-  
-      const existingLike = await Like.findOne({ blogId, userId });
-  
-      if (existingLike) {
-        // If already liked, remove the like
-        await existingLike.deleteOne();
-        const likesCount = await Like.countDocuments({ blogId });
-        return res.status(200).json({ message: "Blog unliked", liked: false, likesCount });
-      } else {
-        // If not liked, add a new like
-        await Like.create({ blogId, userId });
-        const likesCount = await Like.countDocuments({ blogId });
-        return res.status(200).json({ message: "Blog liked", liked: true, likesCount });
-      }
-    } catch (error) {
-      console.error("Error toggling like:", error);
-      res.status(500).json({ error: "Internal server error" });
+  try {
+    const blogId = req.params.id;
+    const userId = req.user._id;
+
+    const blog = await Blog.findById(blogId);
+    if (!blog) return res.status(404).json({ error: "Blog not found" });
+
+    const existingLike = await Like.findOne({ blogId, userId });
+
+    let liked, likesCount;
+
+    if (existingLike) {
+      await existingLike.deleteOne();
+      liked = false;
+    } else {
+      await Like.create({ blogId, userId });
+      liked = true;
     }
-  };
+
+    likesCount = await Like.countDocuments({ blogId });
+
+    // 🧹 Invalidate blog cache after like toggle
+    await redisClient.del(`blog:${blogId}`);
+    await redisClient.del(`slug:${blog.slug}`); // optional, if you're caching by slug too
+
+    return res.status(200).json({ message: liked ? "Blog liked" : "Blog unliked", liked, likesCount });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
     
 
 

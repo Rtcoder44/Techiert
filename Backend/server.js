@@ -41,6 +41,43 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ Error Connecting to MongoDB:", err));
 
+// Example Blog model (ensure your Blog model exists in your app)
+const Blog = require("./models/blogs.model");
+
+// Dynamic Sitemap Route
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    // Fetch all blog posts from the database
+    const blogs = await Blog.find({}).select("slug createdAt"); // Modify as needed
+
+    // Construct the sitemap XML content
+    const sitemap = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url>
+          <loc>https://techiert.com/</loc>
+          <changefreq>daily</changefreq>
+          <priority>1.0</priority>
+        </url>
+        ${blogs.map(post => `
+          <url>
+            <loc>https://techiert.com/blog/${post.slug}</loc>
+            <changefreq>weekly</changefreq>
+            <priority>0.8</priority>
+          </url>
+        `).join('')}
+      </urlset>
+    `;
+    
+    // Set the content type to XML and send the sitemap
+    res.header('Content-Type', 'application/xml');
+    res.send(sitemap);
+  } catch (error) {
+    console.error("Error generating sitemap:", error);
+    res.status(500).send("Error generating sitemap");
+  }
+});
+
 // Health Check Route
 app.get("/homepage", (req, res) => {
   res.send("🔥 Techiert Backend is Running!");

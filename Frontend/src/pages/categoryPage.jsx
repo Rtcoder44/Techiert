@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import Navbar from "../components/dashboard/dashboardNavbar"; // Ensure this path is correct
+import Navbar from "../components/dashboard/dashboardNavbar";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -11,68 +11,64 @@ const CategoryPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCategoryPosts = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`${API_BASE_URL}/api/categories/${slug}`);
-        const blogs = Array.isArray(res.data) ? res.data : [];
+  const fetchCategoryPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/api/categories/${slug}`);
+      const blogs = Array.isArray(data) ? data : [];
+      setPosts(blogs);
 
-        setPosts(blogs);
-
-        // Extract category name from first post or format slug
-        const catName = blogs[0]?.category?.name || slug.replace(/-/g, " ");
-        setCategoryName(catName);
-      } catch (error) {
-        console.error("Failed to load posts by category:", error);
-        setPosts([]);
-        setCategoryName("Unknown Category");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategoryPosts();
+      const name = blogs[0]?.category?.name || slug.replace(/-/g, " ");
+      setCategoryName(name);
+    } catch {
+      setPosts([]);
+      setCategoryName("Unknown Category");
+    } finally {
+      setLoading(false);
+    }
   }, [slug]);
+
+  useEffect(() => {
+    fetchCategoryPosts();
+  }, [fetchCategoryPosts]);
 
   return (
     <div className="bg-[#F1F5F9] min-h-screen">
-      {/* Navbar Component */}
       <Navbar />
 
       <div className="max-w-6xl mx-auto px-4 py-10">
-        {/* Category Title */}
         <h2 className="text-4xl font-bold text-[#1E293B] mb-8 capitalize">
           {categoryName}
         </h2>
 
-        {/* Loading / No Posts */}
         {loading ? (
-          <p className="text-gray-600 text-center text-lg">Loading...</p>
+          <div className="flex justify-center items-center h-40">
+            <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin border-t-transparent"></div>
+          </div>
         ) : posts.length === 0 ? (
           <p className="text-gray-600 text-center text-lg">
             No posts found for this category.
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {posts.map((post) => (
+            {posts.map(({ _id, slug, title, coverImage, excerpt }) => (
               <div
-                key={post._id}
+                key={_id}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1"
               >
-                <Link to={`/blog/${post.slug}`}>
+                <Link to={`/blog/${slug}`}>
                   <img
-                    src={post.coverImage}
-                    alt={post.title}
+                    src={coverImage}
+                    alt={title}
                     loading="lazy"
                     className="h-52 w-full object-cover"
                   />
                   <div className="p-5">
                     <h4 className="text-xl font-semibold text-[#1E293B] line-clamp-2">
-                      {post.title}
+                      {title}
                     </h4>
                     <p className="text-sm text-gray-600 mt-2 line-clamp-3">
-                      {post.excerpt}
+                      {excerpt}
                     </p>
                   </div>
                 </Link>

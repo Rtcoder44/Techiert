@@ -1,32 +1,69 @@
 const express = require("express");
-const { authMiddleware, adminMiddleware, isAdminOrOwner, optionalAuthMiddleware } = require("../middlewares/auth.middleware");
+const {
+  authMiddleware,
+  adminMiddleware,
+  isAdminOrOwner,
+  optionalAuthMiddleware,
+} = require("../middlewares/auth.middleware");
 const blogController = require("../controllers/blog.controller");
 const upload = require("../middlewares/multer");
+const searchController = require("../controllers/searchController");
+const createRateLimiter = require("../utils/rateLimiter");
 
 const router = express.Router();
 
-// ✅ Upload Route (for Tiptap images or cover images)
-router.post("/upload", upload.single("coverImage"), async (req, res) => {
-    try {
-        if (!req.file || !req.file.path) {
-            return res.status(400).json({ error: "No file uploaded" });
-        }
+// 🛡️ Rate Limiters
+const uploadLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: { error: "Too many uploads. Please wait a few minutes." },
+});
 
-        res.status(200).json({ imageUrl: req.file.path }); // Can be a Cloudinary URL
-    } catch (error) {
-        console.error("❌ Image upload error:", error.message);
-        res.status(500).json({ error: "Image upload failed" });
+const searchLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many search requests. Please slow down." },
+});
+
+const commentLimiter = createRateLimiter({
+  windowMs: 2 * 60 * 1000,
+  max: 3,
+  message: { error: "Too many comments. Please wait before commenting again." },
+});
+
+const likeLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: "Too many likes. Please slow down." },
+});
+
+const draftLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many draft operations. Try again later." },
+});
+
+// ✅ Upload Route (for Tiptap images or cover images)
+router.post("/upload", authMiddleware, uploadLimiter, upload.single("coverImage"), async (req, res) => {
+  try {
+    if (!req.file || !req.file.path) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
+
+    res.status(200).json({ imageUrl: req.file.path }); // Can be a Cloudinary URL
+  } catch (error) {
+    console.error("❌ Image upload error:", error.message);
+    res.status(500).json({ error: "Image upload failed" });
+  }
 });
 
 // 📌 Public Routes
 router.get("/", blogController.getAllBlogs);
-router.get("/blog/:id",optionalAuthMiddleware, blogController.getBlogById); // 👈 updated to /blog/:id for clarity
+router.get("/blog/:id", optionalAuthMiddleware, blogController.getBlogById);
 router.get("/comments/:id", blogController.getCommentsForBlog);
 router.get("/related/:id", blogController.getRelatedBlogs);
 router.get("/latest", blogController.getLatestBlogs);
-router.post("/search", blogController.searchBlogs);
-
+router.post("/search", searchLimiter, searchController.searchBlogs);
 
 // 📌 Protected Routes (Authentication Required)
 router.post("/", authMiddleware, upload.single("coverImage"), blogController.createBlog);
@@ -34,18 +71,15 @@ router.put("/:id", authMiddleware, upload.single("coverImage"), blogController.u
 router.delete("/:id", authMiddleware, blogController.deleteBlog);
 
 // 📌 Draft Routes (Authentication Required)
-router.post("/drafts/:_id?", authMiddleware, blogController.saveDraft);
-router.post("/drafts/:id/publish", authMiddleware, blogController.publishDraft);
-router.get("/drafts/latest", authMiddleware, blogController.getLatestDraft);
+router.post("/drafts/:_id?", authMiddleware, draftLimiter, blogController.saveDraft);
+router.post("/drafts/:id/publish", authMiddleware, draftLimiter, blogController.publishDraft);
+router.get("/drafts/latest", authMiddleware, draftLimiter, blogController.getLatestDraft);
 router.get("/drafts/all", authMiddleware, adminMiddleware, blogController.getAllDrafts);
 
-
-
 // 📌 User Interactions (Like & Comment)
-router.post("/:id/like", authMiddleware, blogController.likeBlog);
-router.post("/:id/comment", authMiddleware, blogController.commentOnBlog);
-router.put("/comments/:commentId", authMiddleware,isAdminOrOwner, blogController.updateComment);
+router.post("/:id/like", authMiddleware, likeLimiter, blogController.likeBlog);
+router.post("/:id/comment", authMiddleware, commentLimiter, blogController.commentOnBlog);
+router.put("/comments/:commentId", authMiddleware, isAdminOrOwner, blogController.updateComment);
 router.delete("/comments/:commentId", authMiddleware, isAdminOrOwner, blogController.deleteComment);
-
 
 module.exports = router;

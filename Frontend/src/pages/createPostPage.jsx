@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { FaBars } from "react-icons/fa";
+import { Helmet } from "react-helmet";  // Import Helmet for SEO meta tags management
 import CategoriesSelector from "../components/CreatePostComponents/categoriesSelector";
 import CoverImageUploader from "../components/CreatePostComponents/featuredImageUploader";
 import MetaDetails from "../components/CreatePostComponents/metaDetails";
@@ -6,7 +8,18 @@ import PublishControls from "../components/CreatePostComponents/publishControls"
 import TagsSelector from "../components/CreatePostComponents/tagsSelector";
 import TextEditor from "../components/CreatePostComponents/textEditor";
 import DashboardSidebar from "../components/dashboard/dashboardSidebar";
-import { FaBars } from "react-icons/fa";
+
+// Debounce function to delay state updates and avoid frequent re-renders
+const useDebouncedState = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const EditorPage = () => {
   const [showEditor, setShowEditor] = useState(false);
@@ -20,6 +33,10 @@ const EditorPage = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
   const [coverImage, setCoverImage] = useState(null);
+
+  // Use debounced values to prevent unnecessary re-renders
+  const debouncedPostTitle = useDebouncedState(postTitle, 500);
+  const debouncedEditorContent = useDebouncedState(editorContent, 500);
 
   // Load saved draft from localStorage on mount
   useEffect(() => {
@@ -46,18 +63,17 @@ const EditorPage = () => {
 
   // Auto-save draft when data changes
   useEffect(() => {
-    localStorage.setItem("draftTitle", postTitle);
-    localStorage.setItem("draftContent", editorContent);
+    localStorage.setItem("draftTitle", debouncedPostTitle);
+    localStorage.setItem("draftContent", debouncedEditorContent);
     localStorage.setItem("draftMetaTitle", metaTitle);
     localStorage.setItem("draftMetaDescription", metaDescription);
     localStorage.setItem("draftStatus", postStatus);
     localStorage.setItem("draftCategories", JSON.stringify(selectedCategories));
     localStorage.setItem("draftTags", JSON.stringify(selectedTags));
     localStorage.setItem("draftCoverImage", coverImage);
-  }, [postTitle, editorContent, metaTitle, metaDescription, postStatus, selectedCategories, selectedTags, coverImage]);
+  }, [debouncedPostTitle, debouncedEditorContent, metaTitle, metaDescription, postStatus, selectedCategories, selectedTags, coverImage]);
 
   const handlePublish = (publishedPost) => {
-    console.log("📢 Publishing post:", publishedPost);
     localStorage.clear();
     setPostTitle("");
     setEditorContent("");
@@ -69,123 +85,119 @@ const EditorPage = () => {
     setCoverImage(null);
   };
 
+  // SEO-friendly title and description
+  const seoTitle = metaTitle && metaTitle.length >= 10 ? metaTitle : "Create Post | Techiert";
+  const seoDescription = metaDescription && metaDescription.length >= 30 ? metaDescription : "Create and manage your blog posts.";
+
   return (
     <div className="flex min-h-screen bg-gray-900 text-white transition-all duration-300">
-    {/* Sidebar */}
-    <DashboardSidebar isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-  
-    {/* Main Content */}
-    <div className={`flex-1 p-4 lg:p-6 transition-all duration-300 ${isSidebarOpen ? "ml-64" : "ml-0"}`}>
-      {/* Sidebar Toggle Button */}
-      {!isSidebarOpen && (
-        <button
-          className="top-4 left-4 bg-[#1E293B] mb-3 text-white p-3 rounded-full shadow-md hover:bg-gray-800 transition"
-          onClick={() => setIsSidebarOpen(true)}
-        >
-          <FaBars className="text-xl" />
-        </button>
-      )}
-  
-      {/* 🎯 Title Input & Publish Controls (Same Row) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-        {/* 📝 Title Input (2/3 width) */}
-        <input
-          type="text"
-          placeholder="Enter Post Title..."
-          value={postTitle}
-          onChange={(e) => setPostTitle(e.target.value)}
-          className="col-span-2 p-3 text-lg bg-gray-800 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-  
-        {/* 📢 Publish Controls (1/3 width) */}
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <h2 className="text-xl font-semibold mb-3">📢 Publish</h2>
-          <PublishControls
-            postTitle={postTitle}
-            editorContent={editorContent}
-            metaTitle={metaTitle}
-            metaDescription={metaDescription}
-            category={selectedCategories}
-            tags={selectedTags}
-            coverImage={coverImage}
-            postStatus={postStatus}
-            setPostStatus={setPostStatus}
-            onPublish={handlePublish}
+      {/* Helmet for SEO meta tags */}
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        {/* Add more SEO meta tags as needed */}
+      </Helmet>
+
+      {/* Sidebar */}
+      <DashboardSidebar isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+
+      {/* Main Content */}
+      <div className={`flex-1 p-4 lg:p-6 transition-all duration-300 ${isSidebarOpen ? "ml-64" : "ml-0"}`}>
+        {/* Sidebar Toggle Button */}
+        {!isSidebarOpen && (
+          <button
+            className="top-4 left-4 bg-[#1E293B] mb-3 text-white p-3 rounded-full shadow-md hover:bg-gray-800 transition"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <FaBars className="text-xl" />
+          </button>
+        )}
+
+        {/* Title Input & Publish Controls (Same Row) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+          {/* Title Input */}
+          <input
+            type="text"
+            placeholder="Enter Post Title..."
+            value={postTitle}
+            onChange={(e) => setPostTitle(e.target.value)}
+            className="col-span-2 p-3 text-lg bg-gray-800 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
-      </div>
-  
-      {/* 🛠️ Buttons Below Title */}
-      <div className="flex gap-4 ">
-        <button
-          onClick={() => setShowEditor(true)}
-          className="px-6 py-3 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-        >
-          Open Editor
-        </button>
-        <button
-          onClick={() => setShowMetaDetails(true)}
-          className="px-6 py-3 text-lg font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700"
-        >
-          Open Meta Details
-        </button>
-      </div>
-  
-      {/* 🎯 Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ">
-        {/* ✏️ Left Side (Editor & Options) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Rich Text Editor Modal */}
-          {showEditor && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 p-6">
-              <div className="relative w-full max-w-4xl p-6 bg-gray-800 rounded-lg shadow-lg">
-                <button
-                  onClick={() => setShowEditor(false)}
-                  className="absolute top-4 right-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
-                  Close Editor
-                </button>
-                <TextEditor value={editorContent} onChange={setEditorContent} />
-              </div>
-            </div>
-          )}
-  
-          {/* Meta Details Modal */}
-          {showMetaDetails && (
-            <MetaDetails
+
+          {/* Publish Controls */}
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <h2 className="text-xl font-semibold mb-3">📢 Publish</h2>
+            <PublishControls
+              postTitle={postTitle}
+              editorContent={editorContent}
               metaTitle={metaTitle}
-              setMetaTitle={setMetaTitle}
               metaDescription={metaDescription}
-              setMetaDescription={setMetaDescription}
-              onClose={() => setShowMetaDetails(false)}
+              category={selectedCategories}
+              tags={selectedTags}
+              coverImage={coverImage}
+              postStatus={postStatus}
+              setPostStatus={setPostStatus}
+              onPublish={handlePublish}
             />
-          )}
+          </div>
         </div>
-  
-        {/* 📌 Right Sidebar (Categories, Tags, Cover Image) */}
-        <div className="space-y-6">
-          {/* Categories Selector */}
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-xl font-semibold mb-3">📌 Categories</h2>
+
+        {/* Buttons Below Title */}
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowEditor(true)}
+            className="px-6 py-3 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            Open Editor
+          </button>
+          <button
+            onClick={() => setShowMetaDetails(true)}
+            className="px-6 py-3 text-lg font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700"
+          >
+            Open Meta Details
+          </button>
+        </div>
+
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Side (Editor & Options) */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Rich Text Editor Modal */}
+            {showEditor && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 p-6">
+                <div className="relative w-full max-w-4xl p-6 bg-gray-800 rounded-lg shadow-lg">
+                  <button
+                    onClick={() => setShowEditor(false)}
+                    className="absolute top-4 right-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Close Editor
+                  </button>
+                  <TextEditor value={editorContent} onChange={setEditorContent} />
+                </div>
+              </div>
+            )}
+
+            {/* Meta Details Modal */}
+            {showMetaDetails && (
+              <MetaDetails
+                metaTitle={metaTitle}
+                setMetaTitle={setMetaTitle}
+                metaDescription={metaDescription}
+                setMetaDescription={setMetaDescription}
+                onClose={() => setShowMetaDetails(false)}
+              />
+            )}
+          </div>
+
+          {/* Right Sidebar (Categories, Tags, Cover Image) */}
+          <div className="space-y-6">
             <CategoriesSelector selectedCategories={selectedCategories} setSelectedCategories={setSelectedCategories} />
-          </div>
-  
-          {/* Cover Image Upload */}
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-xl font-semibold mb-3">🖼️ Cover Image</h2>
-            <CoverImageUploader coverImage={coverImage} setCoverImage={setCoverImage} />
-          </div>
-  
-          {/* Tags Selector */}
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-xl font-semibold mb-3">🏷️ Tags</h2>
+            <CoverImageUploader coverImage={coverImage} setCoverImage={setCoverImage} postTitle={postTitle} />
             <TagsSelector tags={selectedTags} setTags={setSelectedTags} />
           </div>
         </div>
       </div>
     </div>
-  </div>
-  
   );
 };
 
