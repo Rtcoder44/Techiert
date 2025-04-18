@@ -4,7 +4,7 @@ import { useAuth } from "../context/authContext";
 import EditName from "../components/userProfileComponents/editName";
 import UpdateProfilePicture from "../components/userProfileComponents/updateProfilePicture";
 import ChangePassword from "../components/auth/changePassword";
-import DashboardLayout from "../components/dashboard/DashboardLayout"; // Adjust path if needed
+import DashboardLayout from "../components/dashboard/dashboardLayout"; // Adjust path if needed
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
