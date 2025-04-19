@@ -11,10 +11,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  "https://techiert-9jc62hwk3-ritik-guptas-projects-028e7d46.vercel.app", // Vercel preview URL
+  process.env.FRONTEND_URL || "http://localhost:5173", // Local dev URL
+  "https://techiert.vercel.app", // ✅ Added production frontend URL
+  "https://techiert-9jc62hwk3-ritik-guptas-projects-028e7d46.vercel.app", // Optional Vercel preview URL
 ];
-
 // Enable CORS to allow frontend requests with cookies
 app.use(
   cors({
@@ -25,8 +25,8 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: "GET, POST, PUT, DELETE",
-    credentials: true,
+    methods: "GET, POST, PUT, DELETE", // Allow all relevant methods
+    credentials: true, // Enable cookies
   })
 );
 
