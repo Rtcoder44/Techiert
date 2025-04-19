@@ -326,6 +326,13 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
 
+    // Choose frontend URL based on environment
+    const frontendUrl = process.env.NODE_ENV === "production"
+      ? "https://techiert.vercel.app"
+      : process.env.CLIENT_URL;
+
+    const resetUrl = `${frontendUrl}/reset-password/${rawToken}`;
+
     // Email transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -337,8 +344,6 @@ exports.forgotPassword = async (req, res) => {
         refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
       },
     });
-
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
 
     const mailOptions = {
       from: `"Techiert" <${process.env.EMAIL}>`,
@@ -359,11 +364,13 @@ exports.forgotPassword = async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     res.json({ message: "✅ Password reset link sent to your email" });
+
   } catch (error) {
     console.error("❌ Error sending reset email:", error);
     res.status(500).json({ error: "Something went wrong. Try again later." });
   }
 };
+
 
  
  // ✅ Reset Password
