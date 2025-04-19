@@ -36,18 +36,19 @@ exports.signup = async (req, res) => {
     const avatarUrl = req.file ? req.file.path : "https://via.placeholder.com/200";
 
     user = new User({ name, email, password, avatar: avatarUrl });
-    await user.save(); // ✅ password will be hashed by the model
+    await user.save();
 
     const token = generateToken(user);
 
+    // ✅ Set HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: isProduction,
+      secure: isProduction, 
       sameSite: isProduction ? "Strict" : "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    console.log("✅ User Created Successfully:", user.email);
+    console.log("✅ User Created Successfully:", user);
 
     res.status(201).json({
       success: true,
@@ -66,7 +67,6 @@ exports.signup = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 // ✅ User Login
 exports.login = async (req, res) => {
@@ -89,17 +89,14 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user);
 
-    // Determine if we're in production or development
-    const isProduction = process.env.NODE_ENV === "production";
-    
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProduction, // Only set secure cookies in production (HTTPS)
-      sameSite: isProduction ? "None" : "Lax", // 'None' for cross-origin in production, 'Lax' or 'Strict' in development
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days expiration
+      httpOnly: true, 
+      secure: isProduction,
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
 
-    console.log("✅ Login Successful:", user.email);
+    console.log("✅ Login Successful:", { _id: user._id, role: user.role });
 
     res.status(200).json({
       success: true,
@@ -119,7 +116,6 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 // user management 
 //get user
