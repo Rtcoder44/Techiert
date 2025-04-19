@@ -16,19 +16,8 @@ const allowedOrigins = [
   "https://techiert-9jc62hwk3-ritik-guptas-projects-028e7d46.vercel.app", // Optional Vercel preview URL
 ];
 // Enable CORS to allow frontend requests with cookies
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: "GET, POST, PUT, DELETE", // Allow all relevant methods
-    credentials: true, // Enable cookies
-  })
-);
+app.use(cors()); // <- Temporarily allow all origins, for testing only
+
 
 // Routes
 const authRoute = require("./routes/auth.route");
