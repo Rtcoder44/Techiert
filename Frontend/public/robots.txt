@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: /api/
 
-Sitemap: https://techiert.com/sitemap.xml
+Sitemap: https://techiert.onrender.com/sitemap.xml
