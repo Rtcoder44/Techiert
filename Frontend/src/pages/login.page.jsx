@@ -4,12 +4,11 @@ import axios from "axios";
 import { useAuth } from "../context/authContext"; 
 import "../styles/auth.css"; 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth(); 
+  const { login } = useAuth();  // This handles authentication state
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -34,18 +33,21 @@ const Login = () => {
     setServerError("");
 
     try {
+      // Send login request to the server with credentials
       const response = await axios.post(
-        `${API_BASE_URL}/api/auth/login`,
-        formData,
-        { withCredentials: true }
+        `${API_BASE_URL}/api/auth/login`, 
+        formData, 
+        { withCredentials: true }  // Ensure cookies are sent with the request
       );
 
-      await login(formData);  // ✅ Ensure login is called with credentials
+      // Successfully logged in, now update context and redirect
+      await login(response.data.user);  // Make sure `login` function is correctly implemented in context
       setLoading(false);
-      navigate("/dashboard");  // ✅ Redirect after successful login
+      navigate("/dashboard");  // Redirect after successful login
 
-      alert(response.data.message); // ✅ Alert after state updates
+      alert(response.data.message);  // Alert message upon successful login
     } catch (error) {
+      // Handle server errors (e.g., invalid credentials)
       setServerError(error.response?.data?.error || "Invalid Credentials");
     } finally {
       setLoading(false);
@@ -59,13 +61,33 @@ const Login = () => {
         {serverError && <p className="error-text text-center">{serverError}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" name="email" value={formData.email} onChange={handleChange} className="auth-input" placeholder="Enter your email" />
+          <input 
+            type="email" 
+            name="email" 
+            value={formData.email} 
+            onChange={handleChange} 
+            className="auth-input" 
+            placeholder="Enter your email" 
+          />
           {errors.email && <p className="error-text">{errors.email}</p>}
           
-          <input type="password" name="password" value={formData.password} onChange={handleChange} className="auth-input" placeholder="Enter your password" />
+          <input 
+            type="password" 
+            name="password" 
+            value={formData.password} 
+            onChange={handleChange} 
+            className="auth-input" 
+            placeholder="Enter your password" 
+          />
           {errors.password && <p className="error-text">{errors.password}</p>}
           
-          <button type="submit" className="auth-button" disabled={loading}>{loading ? "Logging In..." : "Login"}</button>
+          <button 
+            type="submit" 
+            className="auth-button" 
+            disabled={loading}
+          >
+            {loading ? "Logging In..." : "Login"}
+          </button>
         </form>
 
         <p className="auth-links">

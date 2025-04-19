@@ -89,11 +89,14 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user);
 
+    // Determine if we're in production or development
+    const isProduction = process.env.NODE_ENV === "production";
+    
     res.cookie("token", token, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: isProduction, // Only set secure cookies in production (HTTPS)
+      sameSite: isProduction ? "None" : "Lax", // 'None' for cross-origin in production, 'Lax' or 'Strict' in development
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days expiration
     });
 
     console.log("✅ Login Successful:", user.email);
@@ -116,6 +119,7 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 // user management 
 //get user
