@@ -49,9 +49,10 @@ function App() {
   return (
     <Router>
       <Suspense fallback={<Spinner />}>
-      
         <Routes>
-        <Route path="*" element={<NotFound />} />
+          {/* ✅ Redirect from root to dashboard */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
           {/* ✅ Public Auth Routes */}
           <Route
             path="/signup"
@@ -140,6 +141,9 @@ function App() {
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
+
+          {/* ✅ Catch-all for Not Found */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </Router>
