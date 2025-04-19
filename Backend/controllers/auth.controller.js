@@ -170,7 +170,12 @@ exports.deleteUser = async (req, res) => {
 exports.logout = (req, res) => {
   console.log("🔍 Logout request received");
 
-  res.clearCookie("token");
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: isProduction,                             // Must match the `res.cookie` secure option
+    sameSite: isProduction ? "None" : "Lax",          // Must match how it was originally set
+  });
+
   console.log("✅ User logged out");
   res.json({ success: true, message: "Logged out successfully!" });
 };
