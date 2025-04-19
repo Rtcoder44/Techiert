@@ -90,11 +90,12 @@ exports.login = async (req, res) => {
     const token = generateToken(user);
 
     res.cookie("token", token, {
-      httpOnly: true, 
-      secure: isProduction,
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, 
+      httpOnly: true,
+      secure: isProduction, // true only in production (must be HTTPS)
+      sameSite: isProduction ? "None" : "Lax", // "None" for cross-domain in production, "Lax" is fine for local dev
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
+    
 
     console.log("✅ Login Successful:", { _id: user._id, role: user.role });
 
