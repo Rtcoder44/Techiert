@@ -36,19 +36,18 @@ exports.signup = async (req, res) => {
     const avatarUrl = req.file ? req.file.path : "https://via.placeholder.com/200";
 
     user = new User({ name, email, password, avatar: avatarUrl });
-    await user.save();
+    await user.save(); // ✅ password will be hashed by the model
 
     const token = generateToken(user);
 
-    // ✅ Set HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: isProduction, 
+      secure: isProduction,
       sameSite: isProduction ? "Strict" : "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    console.log("✅ User Created Successfully:", user);
+    console.log("✅ User Created Successfully:", user.email);
 
     res.status(201).json({
       success: true,
@@ -67,6 +66,7 @@ exports.signup = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 // ✅ User Login
 exports.login = async (req, res) => {
@@ -90,13 +90,13 @@ exports.login = async (req, res) => {
     const token = generateToken(user);
 
     res.cookie("token", token, {
-      httpOnly: true, 
+      httpOnly: true,
       secure: isProduction,
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, 
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    console.log("✅ Login Successful:", { _id: user._id, role: user.role });
+    console.log("✅ Login Successful:", user.email);
 
     res.status(200).json({
       success: true,

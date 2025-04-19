@@ -11,13 +11,20 @@ app.use(express.json());
 app.use(cookieParser());
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173", // Local dev URL
-  "https://techiert.vercel.app", // ✅ Added production frontend URL
-  "https://techiert-9jc62hwk3-ritik-guptas-projects-028e7d46.vercel.app", // Optional Vercel preview URL
+  "http://localhost:5173",
+  "https://techiert.vercel.app"
 ];
-// Enable CORS to allow frontend requests with cookies
-app.use(cors()); // <- Temporarily allow all origins, for testing only
 
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
 // Routes
 const authRoute = require("./routes/auth.route");
