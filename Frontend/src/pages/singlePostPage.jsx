@@ -78,7 +78,7 @@ const SinglePostPage = () => {
       setLiked(data.liked);
       setLikeCount(data.likesCount);
     } catch (_) {
-      // Handle error silently or use toast
+      // Handle error silently or with a toast
     }
   };
 
@@ -149,8 +149,12 @@ const SinglePostPage = () => {
           </div>
         </div>
 
+        {/* ✅ Post content with centered, responsive images */}
         <div
-          className="prose prose-lg max-w-full text-[#1E293B] prose-headings:text-[#E7000B] prose-img:rounded-lg prose-a:text-blue-600 prose-a:underline"
+          className="prose prose-lg max-w-full text-[#1E293B] prose-headings:text-[#E7000B]
+                     prose-a:text-blue-600 prose-a:underline
+                     prose-img:mx-auto prose-img:my-4 prose-img:rounded-xl
+                     prose-img:max-w-full prose-img:h-auto"
           dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
 

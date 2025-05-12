@@ -5,6 +5,8 @@ import BlogFilters from "../components/manageBlog/blogFilters";
 import DashboardSidebar from "../components/dashboard/dashboardSidebar";
 import axios from "axios";
 import { FaBars } from "react-icons/fa";
+import ClearCacheButton from "../components/manageBlog/clearAllCache"; // Import the ClearCacheButton component
+import { useAuth } from "../context/authContext"; // Import the AuthContext to get user info
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -18,8 +20,9 @@ const debounce = (func, delay) => {
 
 const ManageBlog = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth(); // Get user and loading state from AuthContext
   const [blogs, setBlogs] = useState({ blogs: [], totalBlogs: 0, currentPage: 1, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
+  const [loadingBlogs, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -64,6 +67,8 @@ const ManageBlog = () => {
     }
   };
 
+  if (loading) return <div>Loading...</div>;
+
   return (
     <div className="flex">
       <DashboardSidebar isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -90,7 +95,7 @@ const ManageBlog = () => {
 
         <BlogFilters filters={filters} setFilters={setFilters} />
 
-        {loading ? (
+        {loadingBlogs ? (
           <p className="text-lg text-gray-600">Loading...</p>
         ) : error ? (
           <p className="text-red-600">{error}</p>
@@ -99,9 +104,7 @@ const ManageBlog = () => {
             <BlogTable blogs={blogs} setBlogs={setBlogs} />
             <div className="flex justify-center mt-6">
               <button
-                className={`px-4 py-2 mx-2 rounded ${
-                  filters.page === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-[#E7000B] text-white hover:bg-red-700"
-                }`}
+                className={`px-4 py-2 mx-2 rounded ${filters.page === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-[#E7000B] text-white hover:bg-red-700"}`}
                 disabled={filters.page === 1}
                 onClick={handlePreviousPage}
               >
@@ -111,18 +114,22 @@ const ManageBlog = () => {
               <span className="px-4 py-2">Page {filters.page} of {blogs.totalPages}</span>
 
               <button
-                className={`px-4 py-2 mx-2 rounded ${
-                  filters.page >= blogs.totalPages ? "bg-gray-400 cursor-not-allowed" : "bg-[#1E293B] text-white hover:bg-gray-800"
-                }`}
+                className={`px-4 py-2 mx-2 rounded ${filters.page >= blogs.totalPages ? "bg-gray-400 cursor-not-allowed" : "bg-[#1E293B] text-white hover:bg-gray-800"}`}
                 disabled={filters.page >= blogs.totalPages}
                 onClick={handleNextPage}
               >
                 Next
               </button>
+              {/* Fixed bottom button */}
+      <div className=" bottom-6 right-10 z-50">
+        <ClearCacheButton />
+      </div>
             </div>
           </>
         )}
       </div>
+
+      
     </div>
   );
 };

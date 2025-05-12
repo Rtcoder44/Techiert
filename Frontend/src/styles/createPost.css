@@ -1,33 +1,64 @@
+/* Tiptap Editor Container */
 .editor-container {
   width: 100%;
-  height: 100vh; /* Full height of the screen */
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.sun-editor {
-  flex: 1; /* Makes editor expand to full height */
-  width: 100%;
+/* Editor Toolbar Button Styling */
+.btn {
+  padding: 6px 12px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-.sun-editor .se-wrapper {
-  min-height: 500px !important; /* Ensures the editor is usable */
-  height: 100% !important;
+.btn:hover {
+  background-color: #d1d5db;
 }
 
-.custom-quill-editor .ql-container {
-  min-height: 400px;  /* ✅ Set min height */
-  max-height: 600px;  /* ✅ Set max height */
-  overflow-y: auto;   /* ✅ Enable scrolling */
-}
-
-.custom-quill-editor .ql-editor {
+/* Tiptap Editor Content Area */
+.tiptap {
   min-height: 400px;
   max-height: 600px;
   overflow-y: auto;
+  padding: 12px;
+  line-height: 1.6;
+  font-size: 16px;
+  color: #111827; /* dark:text-white */
+  background-color: #ffffff; /* for dark mode, override with Tailwind class if needed */
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
 }
-/* Ensure text is visible in dark and light themes */
-.ql-editor {
-  color: black !important; /* Ensure text is always visible */
-  min-height: 300px; /* Prevent collapse */
+
+/* Heading styles */
+.tiptap h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.tiptap h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* List styling */
+.tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+/* Image */
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 12px 0;
 }
