@@ -111,215 +111,197 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
 
   return (
     <nav className="bg-[#1E293B] text-white shadow-md px-6 py-4 flex items-center justify-between w-full relative z-[999]">
-      {/* Left Section */}
-      <div className="flex items-center space-x-4">
-        {user && (
-          <button onClick={toggleSidebar} className="focus:outline-none">
-            <img
-              src={user?.avatar || "/default-avatar.png"}
-              alt="User Avatar"
-              className="w-8 h-8 rounded-full border-2 border-white"
-            />
-          </button>
-        )}
-        <Link to="/dashboard">
-          <TechiertLogo className="w-20" />
-        </Link>
-      </div>
-
-      {/* Desktop Navbar */}
-      <div className="hidden md:flex items-center space-x-6">
-        <ul className="flex space-x-6">
-          {structuredCategories.map((category) => (
-            <li
-              key={category.name}
-              className="relative group"
-              onMouseEnter={() =>
-                category.isDropdown && setHoveredDropdown(category.name)
-              }
-              onMouseLeave={() => setHoveredDropdown(null)}
-            >
-              {category.isDropdown ? (
-                <>
-                  <Link
-                    to={`/dashboard/category/${category.slug}`}
-                    className="flex items-center gap-1 hover:text-[#E7000B]"
-                  >
-                    {category.name} <FaChevronDown />
-                  </Link>
-                  <AnimatePresence>
-                    {hoveredDropdown === category.name && (
-                      <motion.ul
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        transition={{ duration: 0.3 }}
-                        className="absolute left-0 top-full bg-[#1E293B] text-white shadow-lg rounded-md w-56 z-[999]"
-                      >
-                        {category.children.map((child, index) => (
-                          <li
-                            key={index}
-                            className="px-4 py-2 hover:bg-gray-700"
-                          >
-                            <Link
-                              to={`/dashboard/category/${child.slug}`}
-                            >
-                              {child.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </motion.ul>
-                    )}
-                  </AnimatePresence>
-                </>
-              ) : (
-                <Link
-                  to={`/dashboard/category/${category.slug}`}
-                  className="hover:text-[#E7000B]"
-                >
-                  {category.name}
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Search Bar */}
-      <div className="hidden md:block relative ml-4 w-72 z-[999]">
-        <FaSearch className="absolute left-3 top-3 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search blogs..."
-          className="px-10 py-2 rounded-lg bg-gray-100 text-black w-full"
-          value={searchQuery}
-          onChange={handleSearch}
+  {/* Left Section */}
+  <div className="flex items-center space-x-4">
+    {user && (
+      <button onClick={toggleSidebar} className="focus:outline-none">
+        <img
+          src={user?.avatar || "/default-avatar.png"}
+          alt="User Avatar"
+          className="w-8 h-8 rounded-full border-2 border-white"
         />
-        <AnimatePresence>
-          {searchResults.length > 0 && (
-            <motion.ul
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2 }}
-              className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[999]"
-            >
-              {searchResults.map((result, index) => (
-                <li key={index} className="px-4 py-2 hover:bg-gray-200">
-                  <Link
-                    to={`/blog/${result.slug}`}
-                    onClick={() => setSearchQuery("")}
-                  >
-                    {result.title}
-                  </Link>
-                </li>
-              ))}
-            </motion.ul>
-          )}
-        </AnimatePresence>
-      </div>
-
-
-      {/* Right Section (Login Button) */}
-      {!user && (
-        <div className="hidden md:flex items-center ml-6">
-          <Link
-            to="/login"
-            className="bg-[#E7000B] hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-colors duration-300"
-          >
-            Login
-          </Link>
-        </div>
-      )}
-
-      {/* Mobile Menu Toggle */}
-      <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="md:hidden text-white text-2xl"
-      >
-        ☰
       </button>
+    )}
+    <Link to="/dashboard">
+      <TechiertLogo className="w-20" />
+    </Link>
+  </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.4 }}
-            className="fixed inset-0 bg-[#1E293B] text-white flex flex-col items-center space-y-4 pt-20 z-[999] w-full h-screen"
-          >
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="absolute top-5 right-5 text-3xl"
-            >
-              <FaTimes />
-            </button>
-
-            <div className="w-4/5 relative z-[999]">
-              <FaSearch className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search categories..."
-                className="w-full px-10 py-2 rounded-lg bg-white text-black"
-                value={searchQuery}
-                onChange={handleSearch}
-              />
+  {/* Desktop Navbar */}
+  <div className="hidden md:flex items-center space-x-6">
+    <ul className="flex space-x-6">
+      {structuredCategories.map((category) => (
+        <li
+          key={category.name}
+          className="relative group"
+          onMouseEnter={() => category.isDropdown && setHoveredDropdown(category.name)}
+          onMouseLeave={() => setHoveredDropdown(null)}
+        >
+          {category.isDropdown ? (
+            <>
+              <Link
+                to={`/dashboard/category/${category.slug}`}
+                className="flex items-center gap-1 hover:text-[#E7000B]"
+              >
+                {category.name} <FaChevronDown />
+              </Link>
               <AnimatePresence>
-                {searchResults.length > 0 && (
+                {hoveredDropdown === category.name && (
                   <motion.ul
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[999]"
-                  >
-                    {searchResults.map((result, index) => (
+                    transition={{ duration: 0.3 }}
+                    className="absolute left-0 top-full bg-[#1E293B] text-white shadow-lg rounded-md w-56 z-[999]">
+                    {category.children.map((child, index) => (
                       <li
                         key={index}
-                        className="px-4 py-2 hover:bg-gray-200"
+                        className="px-4 py-2 hover:bg-gray-700"
                       >
-                        <Link
-                          to={`/blog/${result.slug}`}
-                          onClick={() => setSearchQuery("")}
-                        >
-                          {result.title}
-                        </Link>
+                        <Link to={`/dashboard/category/${child.slug}`}>{child.name}</Link>
                       </li>
                     ))}
-
                   </motion.ul>
                 )}
               </AnimatePresence>
-            </div>
+            </>
+          ) : (
+            <Link
+              to={`/dashboard/category/${category.slug}`}
+              className="hover:text-[#E7000B]"
+            >
+              {category.name}
+            </Link>
+          )}
+        </li>
+      ))}
+    </ul>
+  </div>
 
-            <div className="w-full flex flex-col items-center space-y-3 mt-6">
-              {structuredCategories.map((category) => (
-                <Link
-                  key={category.name}
-                  to={`/dashboard/category/${category.slug}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {category.name}
-                </Link>
-              ))}
+  {/* Search Bar */}
+  <div className="hidden md:block relative ml-4 w-72 z-[999]">
+    <FaSearch className="absolute left-3 top-3 text-gray-400" />
+    <input
+      type="text"
+      placeholder="Search blogs..."
+      className="px-10 py-2 rounded-lg bg-gray-100 text-black w-full"
+      value={searchQuery}
+      onChange={handleSearch}
+    />
+    <AnimatePresence>
+      {searchResults.length > 0 && (
+        <motion.ul
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -5 }}
+          transition={{ duration: 0.2 }}
+          className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[1000]" // Increased z-index here
+        >
+          {searchResults.map((result, index) => (
+            <li key={index} className="px-4 py-2 hover:bg-gray-200">
+              <Link to={`/blog/${result.slug}`} onClick={() => setSearchQuery("")}>
+                {result.title}
+              </Link>
+            </li>
+          ))}
+        </motion.ul>
+      )}
+    </AnimatePresence>
+  </div>
 
-              {/* Mobile Login Button */}
-              {!user && (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="mt-4 bg-[#E7000B] hover:bg-red-700 text-white px-6 py-2 rounded-xl"
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+  {/* Right Section (Login Button) */}
+  {!user && (
+    <div className="hidden md:flex items-center ml-6">
+      <Link
+        to="/login"
+        className="bg-[#E7000B] hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-colors duration-300"
+      >
+        Login
+      </Link>
+    </div>
+  )}
+
+  {/* Mobile Menu Toggle */}
+  <button
+    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+    className="md:hidden text-white text-2xl"
+  >
+    ☰
+  </button>
+
+  {/* Mobile Menu */}
+  <AnimatePresence>
+    {mobileMenuOpen && (
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ duration: 0.4 }}
+        className="fixed inset-0 bg-[#1E293B] text-white flex flex-col items-center space-y-4 pt-20 z-[999] w-full h-screen"
+      >
+        <button
+          onClick={() => setMobileMenuOpen(false)}
+          className="absolute top-5 right-5 text-3xl"
+        >
+          <FaTimes />
+        </button>
+
+        <div className="w-4/5 relative z-[999]">
+          <FaSearch className="absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            className="w-full px-10 py-2 rounded-lg bg-white text-black"
+            value={searchQuery}
+            onChange={handleSearch}
+          />
+          <AnimatePresence>
+            {searchResults.length > 0 && (
+              <motion.ul
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[1000]" // Increased z-index here as well
+              >
+                {searchResults.map((result, index) => (
+                  <li key={index} className="px-4 py-2 hover:bg-gray-200">
+                    <Link to={`/blog/${result.slug}`} onClick={() => setSearchQuery("")}>
+                      {result.title}
+                    </Link>
+                  </li>
+                ))}
+              </motion.ul>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="w-full flex flex-col items-center space-y-3 mt-6">
+          {structuredCategories.map((category) => (
+            <Link
+              key={category.name}
+              to={`/dashboard/category/${category.slug}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {category.name}
+            </Link>
+          ))}
+
+          {/* Mobile Login Button */}
+          {!user && (
+            <Link
+              to="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="mt-4 bg-[#E7000B] hover:bg-red-700 text-white px-6 py-2 rounded-xl"
+            >
+              Login
+            </Link>
+          )}
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</nav>
   );
 };
 

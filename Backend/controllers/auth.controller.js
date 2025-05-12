@@ -7,44 +7,72 @@ const nodemailer = require("nodemailer");
 const Contact = require("../models/contacts.model");
 const validator = require("validator");
 const crypto = require("crypto");
+const { setCache, getCache,deleteUserListCache } = require("../utils/redisClient"); // Assuming Redis utility functions
 
 
 const isProduction = process.env.NODE_ENV === "production";
 
-
 // ✅ Generate JWT Token
 const generateToken = (user) => {
+  const expiresIn = process.env.JWT_EXPIRATION || "7d"; // Fallback to "7d"
+  if (!process.env.JWT_SECRET) {
+    throw new Error("❌ JWT_SECRET is missing from environment variables.");
+  }
+
   return jwt.sign(
-    { _id: user._id, role: user.role },  // ✅ Ensuring `_id` is correctly used
+    { _id: user._id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn }
   );
 };
 
-// ✅ User Signup
+
+// ✅ User Signup with Redis Caching
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     console.log("🔍 Signup request received:", { name, email });
 
-    let user = await User.findOne({ email });
-    if (user) {
-      console.log("❌ User already exists");
+    // Check if the user is cached in Redis
+    const cachedUser = await getCache(`user:${email.toLowerCase()}`);
+    if (cachedUser) {
+      console.log("❌ User already exists in Redis cache");
       return res.status(400).json({ error: "User already exists" });
     }
 
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Check if user exists in the database
+    let user = await User.findOne({ email });
+    if (user) {
+      console.log("❌ User already exists in database");
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    // Ensure a default avatar if not uploaded
     const avatarUrl = req.file ? req.file.path : "https://via.placeholder.com/200";
 
+    // Create new user and hash the password
     user = new User({ name, email, password, avatar: avatarUrl });
+    user.password = await bcrypt.hash(password, 10); // Hash password
+
+    // Save the user to the database
     await user.save();
 
+    // Cache the user in Redis with a TTL (e.g., 1 hour)
+    await setCache(`user:${email.toLowerCase()}`, user, 3600); // Cache for 1 hour
+
+    // Generate JWT token
     const token = generateToken(user);
 
-    // ✅ Set HTTP-only cookie
+    // Set the token as a cookie (HTTP-only, secure in production)
     res.cookie("token", token, {
       httpOnly: true,
-      secure: isProduction, 
-      sameSite: isProduction ? "Strict" : "Lax",
+      secure: isProduction, // Only secure in production
+      sameSite: isProduction ? "Strict" : "Lax", 
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -59,8 +87,8 @@ exports.signup = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        avatar: user.avatar
-      }
+        avatar: user.avatar,
+      },
     });
   } catch (error) {
     console.error("❌ Signup Error:", error);
@@ -75,27 +103,44 @@ exports.login = async (req, res) => {
   try {
     console.log("🔍 Login attempt:", { email });
 
-    const user = await User.findOne({ email }).select("+password");
-    if (!user) {
-      console.log("❌ Invalid email");
-      return res.status(401).json({ error: "Invalid email or password" });
+    // Check if the user is cached in Redis
+    const cachedUser = await getCache(`user:${email.toLowerCase()}`);
+    let user;
+
+    if (cachedUser) {
+      console.log("✅ User found in Redis cache.");
+      user = cachedUser;
+    } else {
+      console.log("❌ User not found in Redis cache, querying database.");
+      // User not found in Redis, fetch from DB
+      user = await User.findOne({ email }).select("+password");
+      
+      if (!user) {
+        console.log("❌ Invalid email");
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      // Cache the user data in Redis for future login attempts
+      await setCache(`user:${email.toLowerCase()}`, user, 3600); // Cache for 1 hour
     }
 
+    // Compare the password if the user is found
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       console.log("❌ Invalid password");
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
+    // Generate JWT token
     const token = generateToken(user);
 
+    // Set the token as a cookie (HTTP-only, secure in production)
     res.cookie("token", token, {
       httpOnly: true,
-      secure: isProduction, // true only in production (must be HTTPS)
+      secure: isProduction, // Only secure in production
       sameSite: isProduction ? "None" : "Lax", // "None" for cross-domain in production, "Lax" is fine for local dev
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    
 
     console.log("✅ Login Successful:", { _id: user._id, role: user.role });
 
@@ -117,7 +162,6 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 // user management 
 //get user
 // Get all users with pagination and optional role-based filtering
@@ -129,47 +173,97 @@ exports.getAllUsers = async (req, res) => {
 
     const filter = roleFilter ? { role: roleFilter } : {};
 
-    const totalUsers = await User.countDocuments(filter);
+    // Generate a unique cache key
+    const cacheKey = `users:${page}:${pageSize}:${roleFilter || "all"}`;
 
+    // Check if data is in Redis cache
+    const cachedData = await getCache(cacheKey);
+
+    if (cachedData) {
+      console.log("✅ Returning cached user list from Redis.");
+      return res.status(200).json(cachedData);
+    }
+
+    // If not cached, fetch from DB
+    const totalUsers = await User.countDocuments(filter);
     const users = await User.find(filter)
       .select("-password")
       .skip((page - 1) * pageSize)
       .limit(pageSize)
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    const responseData = {
       users,
       totalUsers,
       totalPages: Math.ceil(totalUsers / pageSize),
       currentPage: page,
-    });
+    };
+
+    // Store in Redis for future requests
+    await setCache(cacheKey, responseData, 3600); // TTL: 1 hour
+
+    console.log("✅ User list fetched from DB and cached.");
+    res.status(200).json(responseData);
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("❌ Error in getAllUsers:", error);
     res.status(500).json({ message: "Server error while fetching users." });
   }
 };
 
 
+
 // Update User
 
 exports.updateUser = async (req, res) => {
-  const{role} = req.body;
-  const user = await User.findByIdAndUpdate(req.params.id, {role}, {new: true});
-  res.status(200).json(user);
+  try {
+    const { role } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Clear individual user cache and paginated user list cache
+    await setCache(`user:${user._id}`, null); // Optional cleanup
+    await deleteUserListCache(); // Invalidate paginated user list cache
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("❌ Error updating user:", error);
+    res.status(500).json({ error: "Internal server error while updating user." });
+  }
 };
 
 // Delete User
-
 exports.deleteUser = async (req, res) => {
-  const user = await User.findByIdAndDelete(req.params.id);
-  res.status(200).json(user);
-}
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Clear individual user cache and paginated user list cache
+    await setCache(`user:${user._id}`, null); // Optional cleanup
+    await deleteUserListCache(); // Invalidate paginated user list cache
+
+    res.status(200).json({ message: "User deleted successfully", user });
+  } catch (error) {
+    console.error("❌ Error deleting user:", error);
+    res.status(500).json({ error: "Internal server error while deleting user." });
+  }
+};
 
 
 // ✅ User Logout
 exports.logout = (req, res) => {
   console.log("🔍 Logout request received");
 
+  // Clear the cookie (effectively logging out the user)
   res.clearCookie("token", {
     httpOnly: true,
     secure: isProduction,                             // Must match the `res.cookie` secure option
@@ -190,7 +284,14 @@ exports.getMe = async (req, res) => {
       return res.status(401).json({ success: false, error: "Not authorized" });
     }
 
-    // ✅ Populate savedPosts to access post IDs/titles in frontend
+    // Check Redis cache first for authenticated user
+    const cachedUser = await getCache(`user:${req.user._id}`);
+    if (cachedUser) {
+      console.log("✅ Found user data in Redis cache");
+      return res.status(200).json({ success: true, data: cachedUser });
+    }
+
+    // If not in cache, fetch from database
     const user = await User.findById(req.user._id)
       .select("-password")
       .populate("savedPosts", "_id title slug"); // Add other fields if needed
@@ -199,6 +300,9 @@ exports.getMe = async (req, res) => {
       console.log("❌ User not found");
       return res.status(404).json({ success: false, error: "User not found" });
     }
+
+    // Cache the fetched user for future requests
+    await setCache(`user:${user._id}`, user, 3600); // Cache for 1 hour
 
     console.log("✅ Authenticated user fetched:", user);
     return res.status(200).json({ success: true, data: user });
@@ -212,6 +316,7 @@ exports.getMe = async (req, res) => {
 // ✅ Get profile data for settings page
 exports.getProfile = async (req, res) => {
   try {
+    // Fetch the user profile from the database
     const user = await User.findById(req.user._id).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -224,21 +329,26 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+
 // ✅ Update profile (name or avatar)
 exports.updateProfile = async (req, res) => {
   try {
     const { name, avatar } = req.body;
 
+    // Fetch the user from the database
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    // Update profile fields
     if (name) user.name = name;
     if (avatar) user.avatar = avatar;
 
+    // Save the updated user data
     const updatedUser = await user.save();
 
+    // Return the updated user data
     res.status(200).json({
       _id: updatedUser._id,
       name: updatedUser.name,
@@ -251,7 +361,6 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
-
 // Change password controller (for logged-in users)
 exports.changePassword = async (req, res) => {
   try {

@@ -9,6 +9,8 @@ const blogController = require("../controllers/blog.controller");
 const upload = require("../middlewares/multer");
 const searchController = require("../controllers/searchController");
 const createRateLimiter = require("../utils/rateLimiter");
+const sharp = require("sharp"); // Import sharp for image manipulation
+const { setCache, getCache } = require("../utils/redisClient");
 
 const router = express.Router();
 

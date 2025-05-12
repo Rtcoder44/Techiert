@@ -2,10 +2,11 @@ const Blog = require("../models/blogs.model");
 const Tag = require("../models/tags.model");
 const Category = require("../models/categories.model");
 const SearchQuery = require("../models/searchQuery.model");
-const redisClient = require("../utils/redisClient");
 const { default: validator } = require("validator");
 
-// Helper to escape regex characters
+const { setCache, getCache } = require("../utils/redisClient"); // Updated import
+
+// Escape regex special characters
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 exports.logSearchQuery = async (query, userId = null) => {
@@ -35,13 +36,12 @@ exports.searchBlogs = async (req, res) => {
     const trimmedQuery = query.trim();
     const safeRegex = new RegExp(escapeRegex(trimmedQuery), "i");
 
-    // Redis cache key
     const cacheKey = `search:${trimmedQuery.toLowerCase()}:${authorId || "all"}`;
-    const cached = await redisClient.get(cacheKey);
+    const cachedResults = await getCache(cacheKey);
 
-    if (cached) {
-      console.log("⚡ Returning cached search results");
-      return res.status(200).json({ results: JSON.parse(cached), cached: true });
+    if (cachedResults) {
+      console.log("⚡ Returning compressed cached search results");
+      return res.status(200).json({ results: cachedResults, cached: true });
     }
 
     const conditions = [
@@ -66,13 +66,12 @@ exports.searchBlogs = async (req, res) => {
       conditions.push({ author: authorId });
     }
 
-    const blogs = await Blog.find({ $or: conditions })
+    const blogs = await Blog.find({ $or: conditions, status: "published" })
       .populate("tags", "name")
       .populate("category", "name")
       .populate("author", "name");
 
-    // ✅ Cache the result for 5 minutes (300 seconds)
-    await redisClient.set(cacheKey, JSON.stringify(blogs), "EX", 300);
+    await setCache(cacheKey, blogs, 300); // Cache for 5 minutes
 
     if (blogs.length > 0) {
       await exports.logSearchQuery(trimmedQuery, userId);

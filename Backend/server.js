@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
+const { setCache, getCache } = require("./utils/redisClient"); // Importing Redis utility functions
 
 const app = express();
 
@@ -32,12 +33,14 @@ const blogRoute = require("./routes/blog.route");
 const categoryRoutes = require("./routes/category.route");
 const tagRoutes = require("./routes/tag.route");
 const analyticsRoute = require("./routes/analytics.route");
+const cacheController = require("./controllers/cache.controller");
 
 app.use("/api/auth", authRoute);
 app.use("/api/blogs", blogRoute);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tags", tagRoutes);
 app.use("/api/analytics", analyticsRoute);
+app.use("/api/cache", cacheController);
 
 // MongoDB Connection
 mongoose
@@ -55,7 +58,7 @@ const Blog = require("./models/blogs.model");
 app.get("/sitemap.xml", async (req, res) => {
   try {
     // Fetch all blog posts from the database
-    const blogs = await Blog.find({}).select("slug createdAt"); // Modify as needed
+    const blogs = await Blog.find({}).select("slug createdAt");
 
     // Construct the sitemap XML content
     const sitemap = `
@@ -88,6 +91,36 @@ app.get("/sitemap.xml", async (req, res) => {
 // Health Check Route
 app.get("/homepage", (req, res) => {
   res.send("🔥 Techiert Backend is Running!");
+});
+
+// Blog Route with Redis Caching
+app.get("/api/blogs/:slug", async (req, res) => {
+  const { slug } = req.params;
+  const cacheKey = `blog:${slug}`; // Cache key for the specific blog post
+
+  try {
+    // Check if the blog post is already cached in Redis
+    const cachedPost = await getCache(cacheKey);
+    if (cachedPost) {
+      console.log("✅ Serving blog post from cache");
+      return res.json(JSON.parse(cachedPost)); // Return cached data
+    }
+
+    // If not cached, fetch from MongoDB
+    const post = await Blog.findOne({ slug });
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Cache the blog post in Redis for future requests (expires in 1 hour)
+    await setCache(cacheKey, post, 3600); // 1 hour expiration
+
+    console.log("✅ Serving blog post from database");
+    return res.json(post); // Return the fresh data from DB
+  } catch (err) {
+    console.error("❌ Error fetching blog post:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 const port = process.env.PORT || 5000;
