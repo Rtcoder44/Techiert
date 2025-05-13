@@ -15,6 +15,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://techiert.vercel.app",
   "https://techiert.com",
+  "https://www.techiert.com/"
 ];
 
 app.use(cors({
