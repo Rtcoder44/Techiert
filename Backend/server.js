@@ -13,7 +13,8 @@ app.use(cookieParser());
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://techiert.vercel.app"
+  "https://techiert.vercel.app",
+  "https://techiert.com",
 ];
 
 app.use(cors({
