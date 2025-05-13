@@ -19,15 +19,18 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log(`CORS Error: Origin ${origin} is not allowed`);
       callback(new Error("Not allowed by CORS"));
     }
   },
-  credentials: true
+  credentials: true, // Allow cookies and other credentials
 }));
 
+app.options('*', cors()); // Handle pre-flight requests
 // Routes
 const authRoute = require("./routes/auth.route");
 const blogRoute = require("./routes/blog.route");
