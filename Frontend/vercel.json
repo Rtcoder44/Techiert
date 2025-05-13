@@ -21,8 +21,8 @@
       "destination": "https://techiert.onrender.com/robots.txt"
     },
     {
-      "source": "/(.*)",
-      "destination": "/"
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ],
 
