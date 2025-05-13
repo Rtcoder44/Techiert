@@ -13,14 +13,6 @@
 
   "rewrites": [
     {
-      "source": "/sitemap.xml",
-      "destination": "https://techiert.onrender.com/sitemap.xml"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "https://techiert.onrender.com/robots.txt"
-    },
-    {
       "source": "/:path*",
       "destination": "/index.html"
     }
