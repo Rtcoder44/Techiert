@@ -3,20 +3,6 @@
   "outputDirectory": "dist",
   "framework": "vite",
 
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.techiert.com"
-        }
-      ],
-      "destination": "https://techiert.com/:path*",
-      "permanent": true
-    }
-  ],
-
   "rewrites": [
     {
       "source": "/:path*",
