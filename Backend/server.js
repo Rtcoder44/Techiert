@@ -22,7 +22,7 @@ const allowedOrigins = [
 // CORS config
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Allow non-browser tools like Postman
+    if (!origin) return callback(null, true); // Allow tools like Postman
     const cleanedOrigin = origin.replace(/\/$/, '');
     if (allowedOrigins.includes(cleanedOrigin)) {
       return callback(null, true);
@@ -34,7 +34,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Pre-flight requests
+app.options("*", cors(corsOptions)); // Handle pre-flight
 
 // Routes
 const authRoute = require("./routes/auth.route");
@@ -60,55 +60,14 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// Blog model
-const Blog = require("./models/blogs.model");
-
-// Sitemap route
-app.get("/sitemap.xml", async (req, res) => {
-  try {
-    const blogs = await Blog.find({}).select("slug createdAt");
-
-    const sitemap = `
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://techiert.com/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  ${blogs.map(post => `
-  <url>
-    <loc>https://techiert.com/blog/${post.slug}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  `).join('')}
-</urlset>`.trim();
-
-    res.header("Content-Type", "application/xml");
-    res.send(sitemap);
-  } catch (error) {
-    console.error("❌ Error generating sitemap:", error);
-    res.status(500).send("Error generating sitemap");
-  }
-});
-
-// Robots.txt route
-app.get("/robots.txt", (req, res) => {
-  res.type("text/plain").send(`
-User-agent: *
-Disallow: /api/
-
-Sitemap: https://techiert.com/sitemap.xml
-  `.trim());
-});
-
 // Health check
 app.get("/homepage", (req, res) => {
   res.send("🔥 Techiert Backend is Running!");
 });
 
-// Blog route with Redis caching
+// Redis-cached blog detail route
+const Blog = require("./models/blogs.model");
+
 app.get("/api/blogs/:slug", async (req, res) => {
   const { slug } = req.params;
   const cacheKey = `blog:${slug}`;
