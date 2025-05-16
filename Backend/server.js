@@ -99,7 +99,7 @@ app.get("/sitemap.xml", async (req, res) => {
     const blogs = await Blog.find({}, "slug");
     const DOMAIN = "https://techiert.com";
 
-    const urls = blogs.map(
+    const blogUrls = blogs.map(
       (blog) => `
   <url>
     <loc>${DOMAIN}/blog/${blog.slug}</loc>
@@ -108,14 +108,29 @@ app.get("/sitemap.xml", async (req, res) => {
   </url>`
     );
 
+    const staticUrls = [
+      { loc: `${DOMAIN}/`, changefreq: "daily", priority: 1.0 },
+      { loc: `${DOMAIN}/privacy-policy`, changefreq: "yearly", priority: 0.3 },
+      { loc: `${DOMAIN}/terms`, changefreq: "yearly", priority: 0.3 },
+      { loc: `${DOMAIN}/about`, changefreq: "yearly", priority: 0.3 },
+      { loc: `${DOMAIN}/contact`, changefreq: "monthly", priority: 0.5 },
+    ];
+
+    const staticXml = staticUrls
+      .map(
+        (url) => `
+  <url>
+    <loc>${url.loc}</loc>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>`
+      )
+      .join("");
+
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${DOMAIN}/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  ${urls.join("\n")}
+${staticXml}
+${blogUrls.join("\n")}
 </urlset>`;
 
     res.header("Content-Type", "application/xml");
@@ -125,6 +140,7 @@ app.get("/sitemap.xml", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
 
 // Start server
 const port = process.env.PORT || 5000;
