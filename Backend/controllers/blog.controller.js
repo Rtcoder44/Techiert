@@ -254,6 +254,7 @@ exports.getBlogById = async (req, res) => {
     )
       .populate("author", "name role")
       .populate("category", "name")
+      .populate("tags", "name slug")
       .lean();
 
     if (!blog) return res.status(404).json({ error: "Blog not found" });

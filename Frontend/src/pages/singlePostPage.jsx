@@ -6,6 +6,7 @@ import { useAuth } from "../context/authContext";
 import DOMPurify from "dompurify";
 import DashboardLayout from "../components/dashboard/dashboardLayout";
 import SavePostButton from "../components/savePost";
+import { Helmet } from "react-helmet-async";  // <-- import Helmet
 
 const CommentsSection = lazy(() => import("../components/commentSection"));
 const RelatedPosts = lazy(() => import("../components/relatedPost"));
@@ -21,9 +22,8 @@ const PostSkeleton = () => (
       {[...Array(3)].map((_, i) => (
         <div
           key={i}
-          className={`h-4 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded ${
-            i === 1 ? "w-5/6" : i === 2 ? "w-2/3" : "w-full"
-          }`}
+          className={`h-4 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded ${i === 1 ? "w-5/6" : i === 2 ? "w-2/3" : "w-full"
+            }`}
         />
       ))}
     </div>
@@ -89,6 +89,24 @@ const SinglePostPage = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{post.title} - Techiert</title>
+        <meta
+          name="description"
+          content={post.metaDescription || "Read this tech blog on Techiert."}
+        />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={`https://techiert.com/blog/${post.slug}`} />
+
+        {post.tags && post.tags.length > 0 && (
+          <meta
+            name="keywords"
+            content={post.tags.map((tag) => tag.name).join(", ")}
+          />
+        )}
+      </Helmet>
+
+
       <main className="flex-1 p-6 max-w-4xl mx-auto text-[#1E293B]">
         {post.coverImage && (
           <img
@@ -113,9 +131,8 @@ const SinglePostPage = () => {
             className="flex items-center gap-2 hover:scale-105 transition group"
           >
             <FaHeart
-              className={`transition duration-200 ${
-                liked ? "text-red-600" : "text-gray-600 group-hover:text-red-500"
-              }`}
+              className={`transition duration-200 ${liked ? "text-red-600" : "text-gray-600 group-hover:text-red-500"
+                }`}
             />
             <span className={`${liked ? "text-red-600" : "text-gray-600"}`}>
               {liked ? "Liked" : "Like"} ({likeCount})
