@@ -5,6 +5,10 @@
 
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "https://techiert.onrender.com/sitemap.xml"
+    },
+    {
       "source": "/:path*",
       "destination": "/index.html"
     }
