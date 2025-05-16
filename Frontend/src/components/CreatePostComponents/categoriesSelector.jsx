@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const CategoriesSelector = ({ selectedCategories, setSelectedCategories }) => {
   const [categories, setCategories] = useState([]);
 
   // Fetch categories from the backend
   useEffect(() => {
-    fetch("http://localhost:5000/api/categories") // Adjust the API URL if needed
+    fetch(`${API_BASE_URL}/api/categories`) // Adjust the API URL if needed
       .then((res) => res.json())
       .then((data) => setCategories(data))
       .catch((err) => console.error("Error fetching categories:", err));
