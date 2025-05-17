@@ -3,11 +3,24 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import axios from "axios";
-import "../../styles/createPost.css";
 
 const TextEditor = ({ onChange, value }) => {
   const editor = useEditor({
-    extensions: [StarterKit, Image],
+    extensions: [
+      StarterKit,
+      Image.extend({
+        renderHTML({ HTMLAttributes }) {
+          return [
+            "img",
+            {
+              ...HTMLAttributes,
+              loading: "lazy",
+              class: "max-w-full h-auto rounded-md my-4",
+            },
+          ];
+        },
+      }),
+    ],
     content: value || "",
     onUpdate({ editor }) {
       onChange?.(editor.getHTML());
@@ -35,11 +48,14 @@ const TextEditor = ({ onChange, value }) => {
             headers: {
               "Content-Type": "multipart/form-data",
             },
-            withCredentials: true, // ✅ Send cookies for auth
+            withCredentials: true,
           }
         );
 
-        const url = res.data.imageUrl;
+        // Resize image to max width 800 via Cloudinary transformation
+        let url = res.data.imageUrl;
+        url = url.replace("/upload/", "/upload/w_800/");
+
         editor?.chain().focus().setImage({ src: url }).run();
       } catch (err) {
         console.error("Image upload failed:", err);
@@ -53,19 +69,19 @@ const TextEditor = ({ onChange, value }) => {
   return (
     <div className="editor-container">
       {/* Toolbar */}
-      <div className="flex gap-2 flex-wrap border-b pb-2 mb-2">
-        <button onClick={() => editor.chain().focus().toggleBold().run()} className="btn">Bold</button>
-        <button onClick={() => editor.chain().focus().toggleItalic().run()} className="btn">Italic</button>
-        <button onClick={() => editor.chain().focus().toggleStrike().run()} className="btn">Strike</button>
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className="btn">H1</button>
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className="btn">H2</button>
-        <button onClick={() => editor.chain().focus().toggleBulletList().run()} className="btn">• List</button>
-        <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className="btn">1. List</button>
-        <button onClick={handleImageUpload} className="btn">Image</button>
+      <div className="flex flex-wrap gap-2 border-b pb-2 mb-4">
+        <button onClick={() => editor.chain().focus().toggleBold().run()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Bold</button>
+        <button onClick={() => editor.chain().focus().toggleItalic().run()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Italic</button>
+        <button onClick={() => editor.chain().focus().toggleStrike().run()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Strike</button>
+        <button onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">H1</button>
+        <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">H2</button>
+        <button onClick={() => editor.chain().focus().toggleBulletList().run()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">• List</button>
+        <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">1. List</button>
+        <button onClick={handleImageUpload} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Image</button>
       </div>
 
-      {/* Editor Content Area */}
-      <div className="tiptap">
+      {/* Editor */}
+      <div className="prose max-w-full">
         <EditorContent editor={editor} />
       </div>
     </div>
