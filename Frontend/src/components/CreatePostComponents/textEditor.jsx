@@ -3,6 +3,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import axios from "axios";
+import "../../styles/createPost.css";
 
 const TextEditor = ({ onChange, value }) => {
   const editor = useEditor({
