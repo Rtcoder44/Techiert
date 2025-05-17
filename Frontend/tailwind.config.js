@@ -1,3 +1,5 @@
+import typography from '@tailwindcss/typography';
+
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -6,7 +8,19 @@ export default {
       fontFamily: {
         playfair: ['"Playfair Display"', 'serif'],
       },
+      typography: (theme) => ({
+        DEFAULT: {
+          css: {
+            img: {
+              margin: 'auto',
+              borderRadius: theme('borderRadius.lg'),
+              maxWidth: '100%',
+              height: 'auto',
+            },
+          },
+        },
+      }),
     },
   },
-  plugins: [],
+  plugins: [typography],
 };

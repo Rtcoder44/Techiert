@@ -89,24 +89,42 @@ const SinglePostPage = () => {
 
   return (
     <DashboardLayout>
-      <Helmet>
+    <Helmet>
   <title>{post.title} - Techiert</title>
   <meta
     name="description"
-    content={post.metaDescription || "Read this tech blog on Techiert."}
+    content={post.metaDescription?.slice(0, 155) || "Get the latest insights on technology, tutorials, and reviews on Techiert."}
   />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href={`https://techiert.com/blog/${post.slug}`} />
-  {post.tags && post.tags.length > 0 && (
+
+  {/* Keywords */}
+  {post.tags?.length > 0 && (
     <meta name="keywords" content={post.tags.map((tag) => tag.name).join(", ")} />
   )}
 
+  {/* Open Graph (Facebook, LinkedIn, etc.) */}
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content={`${post.title} - Techiert`} />
+  <meta property="og:description" content={post.metaDescription?.slice(0, 155) || "Read this insightful tech blog on Techiert."} />
+  <meta property="og:url" content={`https://techiert.com/blog/${post.slug}`} />
+  <meta property="og:image" content={post.coverImage || "https://techiert.com/default-og-image.jpg"} />
+  <meta property="og:site_name" content="Techiert" />
+
+  {/* Twitter Card */}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={`${post.title} - Techiert`} />
+  <meta name="twitter:description" content={post.metaDescription?.slice(0, 155) || "Explore more tech blogs at Techiert."} />
+  <meta name="twitter:image" content={post.coverImage || "https://techiert.com/default-twitter-image.jpg"} />
+  <meta name="twitter:site" content="@techiert" /> {/* Replace with your Twitter handle if you have one */}
+
+  {/* Schema.org structured data */}
   <script type="application/ld+json">
     {JSON.stringify({
       "@context": "https://schema.org",
       "@type": "BlogPosting",
       "headline": post.title,
-      "image": post.coverImage,
+      "image": [post.coverImage || "https://techiert.com/default-og-image.jpg"],
       "author": {
         "@type": "Person",
         "name": post.author?.name || "Ritik Gupta"
@@ -119,9 +137,10 @@ const SinglePostPage = () => {
           "url": "https://techiert.com/logo.png"
         }
       },
+      "url": `https://techiert.com/blog/${post.slug}`,
       "datePublished": new Date(post.createdAt).toISOString(),
       "dateModified": new Date(post.updatedAt || post.createdAt).toISOString(),
-      "description": post.metaDescription || "Read this tech blog on Techiert.",
+      "description": post.metaDescription?.slice(0, 155) || "Latest technology insights, tutorials, and guides.",
       "mainEntityOfPage": {
         "@type": "WebPage",
         "@id": `https://techiert.com/blog/${post.slug}`
@@ -129,7 +148,6 @@ const SinglePostPage = () => {
     })}
   </script>
 </Helmet>
-
 
 
       <main className="flex-1 p-6 max-w-4xl mx-auto text-[#1E293B]">
