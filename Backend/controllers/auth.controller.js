@@ -284,28 +284,34 @@ exports.getMe = async (req, res) => {
       return res.status(401).json({ success: false, error: "Not authorized" });
     }
 
-    // Check Redis cache first for authenticated user
-    const cachedUser = await getCache(`user:${req.user._id}`);
-    if (cachedUser) {
+    const cacheKey = `user:${req.user._id}`;
+
+    // Check Redis cache first
+    const cachedUser = await getCache(cacheKey);
+    if (cachedUser && Array.isArray(cachedUser.savedPosts)) {
       console.log("✅ Found user data in Redis cache");
       return res.status(200).json({ success: true, data: cachedUser });
     }
 
-    // If not in cache, fetch from database
+    // Fetch from DB with populated savedPosts
     const user = await User.findById(req.user._id)
       .select("-password")
-      .populate("savedPosts", "_id title slug"); // Add other fields if needed
+      .populate("savedPosts", "_id title slug");
 
     if (!user) {
       console.log("❌ User not found");
       return res.status(404).json({ success: false, error: "User not found" });
     }
 
-    // Cache the fetched user for future requests
-    await setCache(`user:${user._id}`, user, 3600); // Cache for 1 hour
+    // Convert to plain object before caching to avoid Mongoose serialization issues
+    const userObject = user.toObject();
 
-    console.log("✅ Authenticated user fetched:", user);
-    return res.status(200).json({ success: true, data: user });
+    // Cache for 1 hour
+    await setCache(cacheKey, userObject, 3600);
+
+    console.log("✅ Authenticated user fetched and cached:", userObject);
+    return res.status(200).json({ success: true, data: userObject });
+
   } catch (error) {
     console.error("❌ Error in getMe:", error);
     return res.status(500).json({ success: false, error: "Internal server error" });
@@ -573,29 +579,34 @@ exports.updateAvatar = async (req, res) => {
 
 // save post 
 // controllers/auth.controller.js
-exports.toggleSavePost  = async (req, res) => {
+exports.toggleSavePost = async (req, res) => {
   try {
     const userId = req.user._id;
     const { blogId } = req.params;
 
     const user = await User.findById(userId);
-
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const alreadySaved = user.savedPosts.includes(blogId);
+    const blogIdStr = blogId.toString();
+    const alreadySaved = user.savedPosts.some(
+      (id) => id.toString() === blogIdStr
+    );
 
     if (alreadySaved) {
-      user.savedPosts.pull(blogId);
+      user.savedPosts.pull(blogIdStr);
     } else {
-      user.savedPosts.push(blogId);
+      user.savedPosts.push(blogIdStr);
     }
 
     await user.save();
 
-    res.status(200).json({ saved: !alreadySaved });
+    // ❌ Invalidate cached user
+    await delCache(`user:${userId}`);
+
+    return res.status(200).json({ saved: !alreadySaved });
   } catch (error) {
     console.error("Toggle save post error:", error.message);
-    res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
