@@ -13,6 +13,7 @@ const RelatedPosts = lazy(() => import("../components/relatedPost"));
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Skeleton while loading
 const PostSkeleton = () => (
   <div className="max-w-4xl mx-auto p-6 animate-pulse space-y-4">
     <div className="h-64 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded-xl mb-6" />
@@ -37,24 +38,15 @@ const Spinner = () => (
   </div>
 );
 
-// Helper to add Cloudinary image optimization params to image URLs
+// Optimize Cloudinary image URLs
 const getOptimizedImageUrl = (url) => {
-  if (!url) return url;
-  if (!url.includes("res.cloudinary.com")) return url; // if not Cloudinary, return as is
-
-  // Insert transformations after '/upload/' in the URL
-  return url.replace(
-    "/upload/",
-    "/upload/w_800,h_auto,c_fit,q_auto,f_auto/"
-  );
+  if (!url || !url.includes("res.cloudinary.com")) return url;
+  return url.replace("/upload/", "/upload/w_800,h_auto,c_fit,q_auto,f_auto/");
 };
 
-// Helper to replace all img src URLs inside HTML content with optimized Cloudinary URLs
+// Optimize <img src=""> inside content
 const optimizeImagesInContent = (html) => {
   if (!html) return html;
-
-  // Regex to find all img tags and capture src
-  // This is a simple regex and works assuming well-formed img tags
   return html.replace(/<img\s+[^>]*src="([^"]+)"[^>]*>/g, (match, src) => {
     const optimizedSrc = getOptimizedImageUrl(src);
     return match.replace(src, optimizedSrc);
@@ -92,29 +84,30 @@ const SinglePostPage = () => {
 
   const handleLike = async () => {
     if (!user) return alert("Please login to like the post.");
-
     try {
       const { data } = await axios.post(
         `${API_BASE_URL}/api/blogs/${post._id}/like`,
         {},
         { withCredentials: true }
       );
-
       setLiked(data.liked);
       setLikeCount(data.likesCount);
-    } catch (_) {
-      // Handle error silently or with a toast
-    }
+    } catch (_) {}
   };
 
   if (loading) return <PostSkeleton />;
   if (!post) return <div className="text-center py-20 text-red-600">Post not found.</div>;
 
-  // Optimize cover image URL if present
   const optimizedCoverImage = getOptimizedImageUrl(post.coverImage);
 
-  // Sanitize and optimize all img src URLs inside post content
-  const sanitizedContent = DOMPurify.sanitize(optimizeImagesInContent(post.content || ""));
+  const sanitizedContent = DOMPurify.sanitize(optimizeImagesInContent(post.content || ""), {
+    ALLOWED_TAGS: [
+      "b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li", "h1", "h2", "h3", "img",
+    ],
+    ALLOWED_ATTR: [
+      "href", "src", "alt", "title", "target", "rel", "class",
+    ],
+  });
 
   return (
     <DashboardLayout>
