@@ -6,7 +6,7 @@ import { useAuth } from "../context/authContext";
 import DOMPurify from "dompurify";
 import DashboardLayout from "../components/dashboard/dashboardLayout";
 import SavePostButton from "../components/savePost";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "react-helmet-async";  // <-- import Helmet
 
 const CommentsSection = lazy(() => import("../components/commentSection"));
 const RelatedPosts = lazy(() => import("../components/relatedPost"));
@@ -22,9 +22,8 @@ const PostSkeleton = () => (
       {[...Array(3)].map((_, i) => (
         <div
           key={i}
-          className={`h-4 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded ${
-            i === 1 ? "w-5/6" : i === 2 ? "w-2/3" : "w-full"
-          }`}
+          className={`h-4 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded ${i === 1 ? "w-5/6" : i === 2 ? "w-2/3" : "w-full"
+            }`}
         />
       ))}
     </div>
@@ -36,30 +35,6 @@ const Spinner = () => (
     <div className="w-10 h-10 border-4 border-blue-300 border-t-transparent rounded-full animate-spin" />
   </div>
 );
-
-// Helper to add Cloudinary image optimization params to image URLs
-const getOptimizedImageUrl = (url) => {
-  if (!url) return url;
-  if (!url.includes("res.cloudinary.com")) return url; // if not Cloudinary, return as is
-
-  // Insert transformations after '/upload/' in the URL
-  return url.replace(
-    "/upload/",
-    "/upload/w_800,h_auto,c_fit,q_auto,f_auto/"
-  );
-};
-
-// Helper to replace all img src URLs inside HTML content with optimized Cloudinary URLs
-const optimizeImagesInContent = (html) => {
-  if (!html) return html;
-
-  // Regex to find all img tags and capture src
-  // This is a simple regex and works assuming well-formed img tags
-  return html.replace(/<img\s+[^>]*src="([^"]+)"[^>]*>/g, (match, src) => {
-    const optimizedSrc = getOptimizedImageUrl(src);
-    return match.replace(src, optimizedSrc);
-  });
-};
 
 const SinglePostPage = () => {
   const { slug } = useParams();
@@ -110,11 +85,7 @@ const SinglePostPage = () => {
   if (loading) return <PostSkeleton />;
   if (!post) return <div className="text-center py-20 text-red-600">Post not found.</div>;
 
-  // Optimize cover image URL if present
-  const optimizedCoverImage = getOptimizedImageUrl(post.coverImage);
-
-  // Sanitize and optimize all img src URLs inside post content
-  const sanitizedContent = DOMPurify.sanitize(optimizeImagesInContent(post.content || ""));
+  const sanitizedContent = DOMPurify.sanitize(post.content || "");
 
   return (
     <DashboardLayout>
@@ -122,72 +93,67 @@ const SinglePostPage = () => {
         <title>{post.title} - Techiert</title>
         <meta
           name="description"
-          content={
-            post.metaDescription?.slice(0, 155) ||
-            "Get the latest insights on technology, tutorials, and reviews on Techiert."
-          }
+          content={post.metaDescription?.slice(0, 155) || "Get the latest insights on technology, tutorials, and reviews on Techiert."}
         />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={`https://techiert.com/blog/${post.slug}`} />
 
+        {/* Keywords */}
         {post.tags?.length > 0 && (
           <meta name="keywords" content={post.tags.map((tag) => tag.name).join(", ")} />
         )}
 
+        {/* Open Graph (Facebook, LinkedIn, etc.) */}
         <meta property="og:type" content="article" />
         <meta property="og:title" content={`${post.title} - Techiert`} />
-        <meta
-          property="og:description"
-          content={post.metaDescription?.slice(0, 155) || "Read this insightful tech blog on Techiert."}
-        />
+        <meta property="og:description" content={post.metaDescription?.slice(0, 155) || "Read this insightful tech blog on Techiert."} />
         <meta property="og:url" content={`https://techiert.com/blog/${post.slug}`} />
-        <meta property="og:image" content={optimizedCoverImage || "https://techiert.com/default-og-image.jpg"} />
+        <meta property="og:image" content={post.coverImage || "https://techiert.com/default-og-image.jpg"} />
         <meta property="og:site_name" content="Techiert" />
 
+        {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${post.title} - Techiert`} />
-        <meta
-          name="twitter:description"
-          content={post.metaDescription?.slice(0, 155) || "Explore more tech blogs at Techiert."}
-        />
-        <meta name="twitter:image" content={optimizedCoverImage || "https://techiert.com/default-twitter-image.jpg"} />
-        <meta name="twitter:site" content="@techiert" />
+        <meta name="twitter:description" content={post.metaDescription?.slice(0, 155) || "Explore more tech blogs at Techiert."} />
+        <meta name="twitter:image" content={post.coverImage || "https://techiert.com/default-twitter-image.jpg"} />
+        <meta name="twitter:site" content="@techiert" /> {/* Replace with your Twitter handle if you have one */}
 
+        {/* Schema.org structured data */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "BlogPosting",
-            headline: post.title,
-            image: [optimizedCoverImage || "https://techiert.com/default-og-image.jpg"],
-            author: {
+            "headline": post.title,
+            "image": [post.coverImage || "https://techiert.com/default-og-image.jpg"],
+            "author": {
               "@type": "Person",
-              name: post.author?.name || "Ritik Gupta",
+              "name": post.author?.name || "Ritik Gupta"
             },
-            publisher: {
+            "publisher": {
               "@type": "Organization",
-              name: "Techiert",
-              logo: {
+              "name": "Techiert",
+              "logo": {
                 "@type": "ImageObject",
-                url: "https://techiert.com/logo.png",
-              },
+                "url": "https://techiert.com/logo.png"
+              }
             },
-            url: `https://techiert.com/blog/${post.slug}`,
-            datePublished: new Date(post.createdAt).toISOString(),
-            dateModified: new Date(post.updatedAt || post.createdAt).toISOString(),
-            description:
-              post.metaDescription?.slice(0, 155) || "Latest technology insights, tutorials, and guides.",
-            mainEntityOfPage: {
+            "url": `https://techiert.com/blog/${post.slug}`,
+            "datePublished": new Date(post.createdAt).toISOString(),
+            "dateModified": new Date(post.updatedAt || post.createdAt).toISOString(),
+            "description": post.metaDescription?.slice(0, 155) || "Latest technology insights, tutorials, and guides.",
+            "mainEntityOfPage": {
               "@type": "WebPage",
-              "@id": `https://techiert.com/blog/${post.slug}`,
-            },
+              "@id": `https://techiert.com/blog/${post.slug}`
+            }
           })}
         </script>
       </Helmet>
 
+
       <main className="flex-1 p-6 max-w-4xl mx-auto text-[#1E293B]">
-        {optimizedCoverImage && (
+        {post.coverImage && (
           <img
-            src={optimizedCoverImage}
+            src={post.coverImage}
             alt={post.title}
             className="rounded-xl w-full max-h-[500px] object-cover mb-6"
             loading="lazy"
@@ -201,15 +167,15 @@ const SinglePostPage = () => {
           <span>{new Date(post.createdAt).toLocaleDateString()}</span>
         </div>
 
+        {/* ❤️ Like + 📌 Save + 🔗 Share */}
         <div className="flex items-center gap-6 my-4 flex-wrap">
           <button
             onClick={handleLike}
             className="flex items-center gap-2 hover:scale-105 transition group"
           >
             <FaHeart
-              className={`transition duration-200 ${
-                liked ? "text-red-600" : "text-gray-600 group-hover:text-red-500"
-              }`}
+              className={`transition duration-200 ${liked ? "text-red-600" : "text-gray-600 group-hover:text-red-500"
+                }`}
             />
             <span className={`${liked ? "text-red-600" : "text-gray-600"}`}>
               {liked ? "Liked" : "Like"} ({likeCount})
@@ -243,6 +209,7 @@ const SinglePostPage = () => {
           </div>
         </div>
 
+        {/* ✅ Post content with centered, responsive images */}
         <div
           className="prose prose-lg max-w-full text-[#1E293B]
              prose-headings:text-[#E7000B]
