@@ -90,21 +90,46 @@ const SinglePostPage = () => {
   return (
     <DashboardLayout>
       <Helmet>
-        <title>{post.title} - Techiert</title>
-        <meta
-          name="description"
-          content={post.metaDescription || "Read this tech blog on Techiert."}
-        />
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={`https://techiert.com/blog/${post.slug}`} />
+  <title>{post.title} - Techiert</title>
+  <meta
+    name="description"
+    content={post.metaDescription || "Read this tech blog on Techiert."}
+  />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href={`https://techiert.com/blog/${post.slug}`} />
+  {post.tags && post.tags.length > 0 && (
+    <meta name="keywords" content={post.tags.map((tag) => tag.name).join(", ")} />
+  )}
 
-        {post.tags && post.tags.length > 0 && (
-          <meta
-            name="keywords"
-            content={post.tags.map((tag) => tag.name).join(", ")}
-          />
-        )}
-      </Helmet>
+  <script type="application/ld+json">
+    {JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "image": post.coverImage,
+      "author": {
+        "@type": "Person",
+        "name": post.author?.name || "Ritik Gupta"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Techiert",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://techiert.com/logo.png"
+        }
+      },
+      "datePublished": new Date(post.createdAt).toISOString(),
+      "dateModified": new Date(post.updatedAt || post.createdAt).toISOString(),
+      "description": post.metaDescription || "Read this tech blog on Techiert.",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": `https://techiert.com/blog/${post.slug}`
+      }
+    })}
+  </script>
+</Helmet>
+
 
 
       <main className="flex-1 p-6 max-w-4xl mx-auto text-[#1E293B]">
