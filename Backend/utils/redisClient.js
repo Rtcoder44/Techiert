@@ -166,6 +166,24 @@ const delCacheByPattern = async (pattern) => {
   }
 };
 
+/**
+ * Delete a specific cache key (non-pattern version)
+ * @param {string} key - Redis key to delete
+ */
+const delCache = async (key) => {
+  try {
+    const result = await client.del(key);
+    if (result === 1) {
+      console.log(`✅ Deleted cache for key: ${key}`);
+    } else {
+      console.log(`ℹ️ No cache found for key: ${key}`);
+    }
+  } catch (err) {
+    console.error(`❌ Error deleting cache key '${key}':`, err);
+  }
+};
+
+
 
 module.exports = {
   client,
@@ -173,4 +191,5 @@ module.exports = {
   getCache,
   deleteUserListCache,
   delCacheByPattern,
+  delCache,
 };

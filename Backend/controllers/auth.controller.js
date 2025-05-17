@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 const Contact = require("../models/contacts.model");
 const validator = require("validator");
 const crypto = require("crypto");
-const { setCache, getCache,deleteUserListCache } = require("../utils/redisClient"); // Assuming Redis utility functions
+const { setCache, getCache,deleteUserListCache, delCache } = require("../utils/redisClient"); // Assuming Redis utility functions
 
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -587,28 +587,28 @@ exports.toggleSavePost = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const blogIdStr = blogId.toString();
-    const alreadySaved = user.savedPosts.some(
-      (id) => id.toString() === blogIdStr
-    );
+    // Ensure correct ObjectId comparison
+    const alreadySaved = user.savedPosts.some(id => id.equals(blogId));
 
     if (alreadySaved) {
-      user.savedPosts.pull(blogIdStr);
+      user.savedPosts.pull(blogId);
     } else {
-      user.savedPosts.push(blogIdStr);
+      user.savedPosts.push(blogId);
     }
 
     await user.save();
 
-    // ❌ Invalidate cached user
+    // Invalidate Redis user cache
     await delCache(`user:${userId}`);
 
-    return res.status(200).json({ saved: !alreadySaved });
+    res.status(200).json({ saved: !alreadySaved });
   } catch (error) {
     console.error("Toggle save post error:", error.message);
-    return res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
 
 exports.getSavedPosts = async (req, res) => {
   try {
