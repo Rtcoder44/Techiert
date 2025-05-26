@@ -85,10 +85,10 @@ const TextEditor = ({ content: initialContent = '', onChange, fontSize = '16px' 
       setUploadProgress(0);
 
       const formData = new FormData();
-      formData.append('file', blobInfo.blob());
+      formData.append('file', blobInfo.blob(), blobInfo.filename());
 
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/blogs/upload`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/blogs/editor/upload`,
         formData,
         {
           headers: { 
@@ -109,10 +109,23 @@ const TextEditor = ({ content: initialContent = '', onChange, fontSize = '16px' 
         }
       );
 
-      success(response.data.imageUrl);
+      if (response.data && response.data.data && response.data.data[0] && response.data.data[0].url) {
+        const imageUrl = response.data.data[0].url;
+        
+        // If we have editor reference, insert the image directly with proper sizing
+        if (editorRef.current) {
+          const img = `<img src="${imageUrl}" alt="${blobInfo.filename()}" style="max-width: 100%; height: auto; display: block; margin: 10px auto;" />`;
+          editorRef.current.execCommand('mceInsertContent', false, img);
+          success(''); // Pass empty string to prevent TinyMCE from trying to validate the response
+        } else {
+          success('');
+        }
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (error) {
       console.error('Error uploading media:', error);
-      failure('Media upload failed');
+      failure('Media upload failed: ' + (error.response?.data?.error?.message || error.message));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -134,10 +147,14 @@ const TextEditor = ({ content: initialContent = '', onChange, fontSize = '16px' 
             'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
             'preview', 'anchor', 'searchreplace', 'visualblocks', 'code',
             'fullscreen', 'insertdatetime', 'media', 'table', 'help',
-            'wordcount', 'emoticons'
+            'wordcount', 'emoticons', 'quickbars'
           ],
-          toolbar1: 'blocks | bold italic underline | alignleft aligncenter alignright alignjustify',
+          toolbar1: 'blocks | bold italic underline | alignleft aligncenter alignright alignjustify | removeformat',
           toolbar2: 'bullist numlist | outdent indent | link image media | forecolor backcolor | code fullscreen',
+          contextmenu: 'link image imagetools table',
+          quickbars_insert_toolbar: 'quickimage quicktable',
+          quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote | removeformat',
+          quickbars_image_toolbar: true,
           content_style: `
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -152,26 +169,45 @@ const TextEditor = ({ content: initialContent = '', onChange, fontSize = '16px' 
             h5 { font-size: 1.1em; margin: 1.67em 0; }
             h6 { font-size: 1em; margin: 2.33em 0; }
             p { margin: 1em 0; }
+            img {
+              max-width: 100%;
+              height: auto;
+              display: block;
+              margin: 10px auto;
+            }
           `,
           setup: (editor) => {
             editor.on('Change', () => {
               const content = editor.getContent();
               onChange(content);
             });
+
+            // Add keyboard shortcut for removing images
+            editor.addShortcut('Delete', 'Delete selected image', () => {
+              const selectedNode = editor.selection.getNode();
+              if (selectedNode.nodeName === 'IMG') {
+                editor.selection.select(selectedNode);
+                editor.selection.setContent('');
+              }
+            });
           },
           block_formats: 'Paragraph=p; Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
           images_upload_handler: handleMediaUpload,
-          file_picker_types: 'file image media',
           automatic_uploads: true,
-          images_reuse_filename: true,
           paste_data_images: true,
-          media_live_embeds: true,
-          media_alt_source: false,
-          media_poster: false,
-          browser_spellcheck: true,
-          contextmenu: false,
-          resize: false,
-          statusbar: false,
+          relative_urls: false,
+          remove_script_host: false,
+          convert_urls: false,
+          image_advtab: true,
+          image_dimensions: true,
+          image_class_list: [
+            { title: 'Responsive', value: 'img-responsive' }
+          ],
+          image_default_size: {
+            width: '800',
+            height: 'auto'
+          },
+          file_picker_types: 'image',
           formats: {
             h1: { block: 'h1' },
             h2: { block: 'h2' },

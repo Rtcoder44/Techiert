@@ -45,7 +45,37 @@ const draftLimiter = createRateLimiter({
   message: { error: "Too many draft operations. Try again later." },
 });
 
-// ✅ Upload Route (for Tiptap images or cover images)
+// ✅ Editor Image Upload Route (separate from cover image)
+router.post("/editor/upload", authMiddleware, uploadLimiter, upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file || !req.file.path) {
+      return res.status(400).json({
+        error: {
+          message: "No file uploaded",
+          remove: true
+        }
+      });
+    }
+
+    // Return a simpler format with the image data
+    res.json({
+      data: [{
+        url: req.file.path,
+        name: req.file.originalname || 'image'
+      }]
+    });
+  } catch (error) {
+    console.error("❌ Editor image upload error:", error.message);
+    res.status(500).json({
+      error: {
+        message: error.message || "Image upload failed",
+        remove: true
+      }
+    });
+  }
+});
+
+// ✅ Cover Image Upload Route (existing route)
 router.post("/upload", authMiddleware, uploadLimiter, upload.single("coverImage"), async (req, res) => {
   try {
     if (!req.file || !req.file.path) {
