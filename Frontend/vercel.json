@@ -3,6 +3,20 @@
   "outputDirectory": "dist",
   "framework": "vite",
 
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "editor.techiert.com"
+        }
+      ],
+      "destination": "/",
+      "permanent": true
+    }
+  ],
+
   "rewrites": [
     {
       "source": "/sitemap.xml",

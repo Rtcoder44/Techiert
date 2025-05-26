@@ -6,7 +6,7 @@ import CoverImageUploader from "../components/CreatePostComponents/featuredImage
 import MetaDetails from "../components/CreatePostComponents/metaDetails";
 import PublishControls from "../components/CreatePostComponents/publishControls";
 import TagsSelector from "../components/CreatePostComponents/tagsSelector";
-import TextEditor from "../components/CreatePostComponents/textEditor";
+import CustomEditor from "../components/CreatePostComponents/textEditor";
 import DashboardSidebar from "../components/dashboard/dashboardSidebar";
 
 // Debounce function to delay state updates and avoid frequent re-renders
@@ -22,10 +22,14 @@ const useDebouncedState = (value, delay) => {
 };
 
 const EditorPage = () => {
-  const [showEditor, setShowEditor] = useState(false);
   const [showMetaDetails, setShowMetaDetails] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
-  const [editorContent, setEditorContent] = useState("");
+  const [editorContent, setEditorContent] = useState(() => {
+    // Initialize editor content from localStorage
+    const savedContent = localStorage.getItem("draftContent");
+    console.log("Initial editor content from localStorage:", savedContent);
+    return savedContent || "";
+  });
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [postTitle, setPostTitle] = useState("");
@@ -42,7 +46,6 @@ const EditorPage = () => {
   useEffect(() => {
     const savedData = {
       title: localStorage.getItem("draftTitle"),
-      content: localStorage.getItem("draftContent"),
       metaTitle: localStorage.getItem("draftMetaTitle"),
       metaDescription: localStorage.getItem("draftMetaDescription"),
       status: localStorage.getItem("draftStatus"),
@@ -52,7 +55,6 @@ const EditorPage = () => {
     };
 
     if (savedData.title) setPostTitle(savedData.title);
-    if (savedData.content) setEditorContent(savedData.content);
     if (savedData.metaTitle) setMetaTitle(savedData.metaTitle);
     if (savedData.metaDescription) setMetaDescription(savedData.metaDescription);
     if (savedData.status) setPostStatus(savedData.status);
@@ -63,18 +65,37 @@ const EditorPage = () => {
 
   // Auto-save draft when data changes
   useEffect(() => {
-    localStorage.setItem("draftTitle", debouncedPostTitle);
-    localStorage.setItem("draftContent", debouncedEditorContent);
+    if (debouncedEditorContent) {
+      console.log("Saving editor content to localStorage");
+      localStorage.setItem("draftContent", debouncedEditorContent);
+    }
+    
+    if (debouncedPostTitle) {
+      localStorage.setItem("draftTitle", debouncedPostTitle);
+    }
+    
     localStorage.setItem("draftMetaTitle", metaTitle);
     localStorage.setItem("draftMetaDescription", metaDescription);
     localStorage.setItem("draftStatus", postStatus);
     localStorage.setItem("draftCategories", JSON.stringify(selectedCategories));
     localStorage.setItem("draftTags", JSON.stringify(selectedTags));
-    localStorage.setItem("draftCoverImage", coverImage);
+    if (coverImage) {
+      localStorage.setItem("draftCoverImage", coverImage);
+    }
   }, [debouncedPostTitle, debouncedEditorContent, metaTitle, metaDescription, postStatus, selectedCategories, selectedTags, coverImage]);
 
   const handlePublish = (publishedPost) => {
-    localStorage.clear();
+    // Clear all localStorage data after successful publish
+    localStorage.removeItem("draftTitle");
+    localStorage.removeItem("draftContent");
+    localStorage.removeItem("draftMetaTitle");
+    localStorage.removeItem("draftMetaDescription");
+    localStorage.removeItem("draftStatus");
+    localStorage.removeItem("draftCategories");
+    localStorage.removeItem("draftTags");
+    localStorage.removeItem("draftCoverImage");
+
+    // Reset all state
     setPostTitle("");
     setEditorContent("");
     setMetaTitle("");
@@ -83,6 +104,11 @@ const EditorPage = () => {
     setSelectedCategories([]);
     setSelectedTags([]);
     setCoverImage(null);
+  };
+
+  const handleEditorChange = (newContent) => {
+    console.log("Editor onChange called");
+    setEditorContent(newContent);
   };
 
   // SEO-friendly title and description
@@ -113,16 +139,25 @@ const EditorPage = () => {
           </button>
         )}
 
-        {/* Title Input & Publish Controls (Same Row) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-          {/* Title Input */}
-          <input
-            type="text"
-            placeholder="Enter Post Title..."
-            value={postTitle}
-            onChange={(e) => setPostTitle(e.target.value)}
-            className="col-span-2 p-3 text-lg bg-gray-800 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        {/* Title Input & Publish Controls */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-6">
+          <div className="lg:col-span-2">
+            <input
+              type="text"
+              placeholder="Enter Post Title..."
+              value={postTitle}
+              onChange={(e) => setPostTitle(e.target.value)}
+              className="w-full p-3 text-lg bg-gray-800 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+            />
+            
+            {/* Meta Details Button */}
+            <button
+              onClick={() => setShowMetaDetails(true)}
+              className="px-6 py-3 text-lg font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700"
+            >
+              SEO Meta Details
+            </button>
+          </div>
 
           {/* Publish Controls */}
           <div className="bg-gray-800 p-4 rounded-lg">
@@ -142,51 +177,11 @@ const EditorPage = () => {
           </div>
         </div>
 
-        {/* Buttons Below Title */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => setShowEditor(true)}
-            className="px-6 py-3 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-          >
-            Open Editor
-          </button>
-          <button
-            onClick={() => setShowMetaDetails(true)}
-            className="px-6 py-3 text-lg font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700"
-          >
-            Open Meta Details
-          </button>
-        </div>
-
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Side (Editor & Options) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Rich Text Editor Modal */}
-            {showEditor && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 p-6">
-                <div className="relative w-full max-w-4xl p-6 bg-gray-800 rounded-lg shadow-lg">
-                  <button
-                    onClick={() => setShowEditor(false)}
-                    className="absolute top-4 right-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  >
-                    Close Editor
-                  </button>
-                  <TextEditor value={editorContent} onChange={setEditorContent} />
-                </div>
-              </div>
-            )}
-
-            {/* Meta Details Modal */}
-            {showMetaDetails && (
-              <MetaDetails
-                metaTitle={metaTitle}
-                setMetaTitle={setMetaTitle}
-                metaDescription={metaDescription}
-                setMetaDescription={setMetaDescription}
-                onClose={() => setShowMetaDetails(false)}
-              />
-            )}
+          {/* Left Side (Editor) */}
+          <div className="lg:col-span-2 bg-gray-800 rounded-lg p-4">
+            <CustomEditor value={editorContent} onChange={handleEditorChange} />
           </div>
 
           {/* Right Sidebar (Categories, Tags, Cover Image) */}
@@ -196,6 +191,17 @@ const EditorPage = () => {
             <TagsSelector tags={selectedTags} setTags={setSelectedTags} />
           </div>
         </div>
+
+        {/* Meta Details Modal */}
+        {showMetaDetails && (
+          <MetaDetails
+            metaTitle={metaTitle}
+            setMetaTitle={setMetaTitle}
+            metaDescription={metaDescription}
+            setMetaDescription={setMetaDescription}
+            onClose={() => setShowMetaDetails(false)}
+          />
+        )}
       </div>
     </div>
   );
