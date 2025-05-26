@@ -97,17 +97,19 @@ const TextEditor = ({ content: initialContent = '', onChange, fontSize = '16px' 
           withCredentials: true,
           onUploadProgress: (progressEvent) => {
             if (progressEvent.total) {
-              const progress = Math.round(
+              const currentProgress = Math.round(
                 (progressEvent.loaded * 100) / progressEvent.total
               );
-              setUploadProgress(progress);
-              progress(progress);
+              setUploadProgress(currentProgress);
+              if (typeof progress === 'function') {
+                progress(currentProgress);
+              }
             }
           },
         }
       );
 
-      success(response.data.url);
+      success(response.data.imageUrl);
     } catch (error) {
       console.error('Error uploading media:', error);
       failure('Media upload failed');
