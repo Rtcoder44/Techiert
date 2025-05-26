@@ -2,10 +2,10 @@ import React from "react";
 
 const MetaDetails = ({ metaTitle, setMetaTitle, metaDescription, setMetaDescription, onClose }) => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 p-6">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 p-6 z-[9999]">
       
       {/* Modal Container */}
-      <div className="w-full max-w-lg bg-gray-900 p-6 rounded-lg shadow-lg">
+      <div className="w-full max-w-lg bg-gray-900 p-6 rounded-lg shadow-lg relative">
         
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
@@ -41,7 +41,6 @@ const MetaDetails = ({ metaTitle, setMetaTitle, metaDescription, setMetaDescript
           />
         </div>
       </div>
-
     </div>
   );
 };
