@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../../context/authContext";
+import { showNotification, showAuthError, showErrorMessage } from '../../utils/notification';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -30,7 +31,7 @@ const BlogEditModal = ({ blog, onClose, onUpdate }) => {
   const handleUpdate = async () => {
     try {
       if (!user || user.role !== "admin") {
-        alert("You are not authorized to update this blog.");
+        showAuthError("You are not authorized to update this blog");
         return;
       }
   
@@ -55,7 +56,7 @@ const BlogEditModal = ({ blog, onClose, onUpdate }) => {
       onClose(); // Close modal
     } catch (error) {
       console.error("Error updating blog:", error);
-      alert("Failed to update the blog. Please try again.");
+      showErrorMessage(error);
     }
   };
 
@@ -75,7 +76,7 @@ const BlogEditModal = ({ blog, onClose, onUpdate }) => {
       setCoverImage(response.data.imageUrl);
     } catch (error) {
       console.error("Image upload failed:", error);
-      alert("Failed to upload image. Please try again.");
+      showErrorMessage(error);
     }
   };
   

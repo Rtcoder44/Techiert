@@ -85,12 +85,20 @@ const ManageBlog = () => {
       <div className={`flex-1 p-6 bg-[#F1F5F9] min-h-screen text-[#1E293B] transition-all duration-300 ${isSidebarOpen ? "ml-64" : "ml-0"}`}>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl mb-6 ml-13 font-bold">Manage Blog</h1>
-          <button
-            className="px-6 py-3 bg-[#1E293B] text-white rounded-lg hover:bg-[#0F172A] transition"
-            onClick={() => navigate("/dashboard/create-post")}
-          >
-            + Add New Post
-          </button>
+          <div className="flex gap-4">
+            <button
+              className="px-6 py-3 bg-[#1E293B] text-white rounded-lg hover:bg-[#0F172A] transition"
+              onClick={() => navigate("/dashboard/manage-products")}
+            >
+              Manage Products
+            </button>
+            <button
+              className="px-6 py-3 bg-[#1E293B] text-white rounded-lg hover:bg-[#0F172A] transition"
+              onClick={() => navigate("/dashboard/create-post")}
+            >
+              + Add New Post
+            </button>
+          </div>
         </div>
 
         <BlogFilters filters={filters} setFilters={setFilters} />

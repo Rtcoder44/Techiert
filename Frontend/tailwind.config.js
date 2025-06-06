@@ -22,5 +22,8 @@ export default {
       }),
     },
   },
-  plugins: [typography],
+  plugins: [
+    typography,
+    require('tailwind-scrollbar'),
+  ],
 };

@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { resetCart, initializeCart } from "../redux/slices/cartSlice";
 
 const AuthContext = createContext();
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -8,6 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
 
   // ✅ Fetch authenticated user from API
   const fetchUser = async () => {
@@ -19,6 +22,7 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.data);
     } catch (error) {
       setUser(null);
+      dispatch(initializeCart());
     } finally {
       setLoading(false);
     }
@@ -53,6 +57,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, { withCredentials: true });
       setUser(null); // ✅ Remove user on logout
+      dispatch(resetCart()); // Reset cart state
+      dispatch(initializeCart()); // Initialize guest cart
     } catch (error) {
       console.error("❌ Logout failed:", error);
     } finally {

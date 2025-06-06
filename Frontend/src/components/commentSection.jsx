@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/authContext";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
+import { showNotification, showAuthError, showValidationError, showErrorMessage } from '../utils/notification';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -27,7 +28,7 @@ const CommentsSection = ({ postId }) => {
       setComments(structured);
     } catch (err) {
       console.error("❌ Failed to load comments:", err);
-      alert("Failed to load comments.");
+      showErrorMessage("Failed to load comments.");
     }
   };
 
@@ -62,8 +63,14 @@ const CommentsSection = ({ postId }) => {
   };
 
   const handleCommentSubmit = async () => {
-    if (!user) return alert("You need to log in to comment.");
-    if (!newComment.trim()) return alert("Comment cannot be empty.");
+    if (!user) {
+      showAuthError();
+      return;
+    }
+    if (!newComment.trim()) {
+      showValidationError("Comment cannot be empty");
+      return;
+    }
 
     try {
       await axios.post(
@@ -75,14 +82,20 @@ const CommentsSection = ({ postId }) => {
       fetchComments();
     } catch (err) {
       console.error("❌ Error submitting comment:", err);
-      alert("Failed to post comment.");
+      showErrorMessage("Failed to post comment.");
     }
   };
 
   const handleReplySubmit = async (commentId) => {
     const reply = replyContent[commentId];
-    if (!user) return alert("You need to log in to reply.");
-    if (!reply || !reply.trim()) return alert("Reply cannot be empty.");
+    if (!user) {
+      showAuthError();
+      return;
+    }
+    if (!reply || !reply.trim()) {
+      showValidationError("Reply cannot be empty");
+      return;
+    }
 
     try {
       await axios.post(
@@ -95,12 +108,15 @@ const CommentsSection = ({ postId }) => {
       fetchComments();
     } catch (err) {
       console.error("❌ Error replying to comment:", err);
-      alert("Failed to post reply.");
+      showErrorMessage("Failed to post reply.");
     }
   };
 
   const handleEditSubmit = async (commentId) => {
-    if (!editContent.trim()) return alert("Edited comment cannot be empty.");
+    if (!editContent.trim()) {
+      showValidationError("Edited comment cannot be empty");
+      return;
+    }
 
     try {
       await axios.put(
@@ -113,7 +129,7 @@ const CommentsSection = ({ postId }) => {
       fetchComments();
     } catch (err) {
       console.error("❌ Failed to update comment:", err);
-      alert("Could not update comment.");
+      showErrorMessage("Could not update comment.");
     }
   };
 
@@ -128,7 +144,7 @@ const CommentsSection = ({ postId }) => {
       fetchComments();
     } catch (err) {
       console.error("❌ Failed to delete comment:", err);
-      alert("Could not delete comment.");
+      showErrorMessage("Could not delete comment.");
     }
   };
 

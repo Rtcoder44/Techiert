@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/authContext'; // Import the AuthContext
 import axios from 'axios'; // Import Axios
+import { showNotification } from '../../utils/notification';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -28,7 +29,7 @@ const ClearCacheButton = () => {
       });
 
       if (response.status === 200) {
-        alert(response.data.message); // Show success message
+        showNotification.success(response.data.message);
       } else {
         setErrorMessage('Failed to clear cache. Please try again.');
       }
