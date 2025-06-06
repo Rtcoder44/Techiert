@@ -10,18 +10,21 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "blog-images",
-    allowed_formats: ["jpeg", "png", "jpg", "webp"],
-    format: "webp", // Force uploaded format to webp
+    format: "webp",
     transformation: [
-      { width: 800, crop: "limit" },              // Resize keeping aspect ratio
-      { fetch_format: "webp", quality: "auto" },  // Optimize and convert
+      {
+        width: 800,
+        crop: "limit",
+        fetch_format: "webp",
+        quality: "auto",
+      },
     ],
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
     if (!allowedTypes.includes(file.mimetype)) {
