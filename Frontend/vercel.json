@@ -3,21 +3,24 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/node",
+      "use": "@vercel/static-build",
       "config": {
-        "nodeVersion": "18.x"
+        "distDir": "dist"
       }
     }
   ],
   "routes": [
     {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|svg|gif)$)",
+      "dest": "/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/"
+      "dest": "/index.html"
     }
-  ],
-  "build": {
-    "env": {
-      "NODE_OPTIONS": "--max_old_space_size=4096"
-    }
-  }
+  ]
 }
