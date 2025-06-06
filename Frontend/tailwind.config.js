@@ -1,29 +1,14 @@
-import typography from '@tailwindcss/typography';
-
+/** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: "class",
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
   theme: {
-    extend: {
-      fontFamily: {
-        playfair: ['"Playfair Display"', 'serif'],
-      },
-      typography: (theme) => ({
-        DEFAULT: {
-          css: {
-            img: {
-              margin: 'auto',
-              borderRadius: theme('borderRadius.lg'),
-              maxWidth: '100%',
-              height: 'auto',
-            },
-          },
-        },
-      }),
-    },
+    extend: {},
   },
   plugins: [
-    typography,
+    require('@tailwindcss/typography'),
     require('tailwind-scrollbar'),
   ],
-};
+}
