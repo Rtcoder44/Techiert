@@ -1,44 +1,23 @@
 {
-  "buildCommand": "npm install --legacy-peer-deps && npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-
-  "redirects": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "editor.techiert.com"
-        }
-      ],
-      "destination": "/",
-      "permanent": true
+      "src": "package.json",
+      "use": "@vercel/node",
+      "config": {
+        "nodeVersion": "18.x"
+      }
     }
   ],
-
-  "rewrites": [
+  "routes": [
     {
-      "source": "/sitemap.xml",
-      "destination": "https://techiert.onrender.com/sitemap.xml"
-    },
-    {
-      "source": "/:path*",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/"
     }
   ],
-
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=()" },
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
-      ]
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max_old_space_size=4096"
     }
-  ]
+  }
 }
