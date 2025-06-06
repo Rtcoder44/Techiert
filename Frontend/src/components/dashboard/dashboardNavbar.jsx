@@ -2,83 +2,48 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/authContext";
+import { useSelector } from 'react-redux';
 import TechiertLogo from "../techiert.logo";
-import axios from "axios";
-import { FaChevronDown, FaSearch, FaTimes } from "react-icons/fa";
+import { FaSearch, FaTimes, FaBlog, FaStore, FaShoppingCart, FaClipboardList, FaBars } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
   const { user } = useAuth();
+  const { items } = useSelector(state => state.cart);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [hoveredDropdown, setHoveredDropdown] = useState(null);
-  const [dropdownCategories, setDropdownCategories] = useState([]);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/api/categories`)
-      .then((response) => {
-        const allCategories = response.data;
-
-        const parentCategoryNames = [
-          "tech news",
-          "tech products",
-          "comparisons",
-          "how-to guides",
-        ];
-        const dropdownCategoryNames = [
-          "mobile reviews",
-          "laptop reviews",
-          "tech accessories",
-          "gaming",
-        ];
-
-        const parentCategories = allCategories.filter((cat) =>
-          parentCategoryNames.includes(cat.name.toLowerCase())
-        );
-
-        const dropdownCategories = allCategories.filter((cat) =>
-          dropdownCategoryNames.includes(cat.name.toLowerCase())
-        );
-
-        setCategories(parentCategories);
-        setDropdownCategories(dropdownCategories);
-      })
-      .catch((error) => console.error("Error fetching categories:", error));
-  }, []);
-
-  useEffect(() => {
+  // Debounce search query
+  React.useEffect(() => {
     const handler = setTimeout(() => {
       const trimmed = searchQuery.trim();
-  
-      // Only set debounced query if it's meaningful (3+ chars)
       if (trimmed.length >= 3) {
         setDebouncedQuery(trimmed);
       } else {
-        setDebouncedQuery(""); // Prevent triggering search
-        setSearchResults([]);  // Also clear previous results
+        setDebouncedQuery("");
+        setSearchResults([]);
       }
     }, 300);
-  
+
     return () => clearTimeout(handler);
   }, [searchQuery]);
-  
-  // Fetch search results from backend when debounced query changes
-  useEffect(() => {
+
+  // Fetch search results
+  React.useEffect(() => {
     if (debouncedQuery === "") {
       setSearchResults([]);
       return;
     }
-  
+
     axios
       .post(`${API_BASE_URL}/api/blogs/search`, {
         query: debouncedQuery,
-        authorId: user?.id || undefined, // Optional filter
+        authorId: user?.id || undefined,
       })
       .then((response) => {
         setSearchResults(response.data.results || []);
@@ -87,221 +52,172 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
         console.error("Error searching blogs:", error);
       });
   }, [debouncedQuery, user?.id]);
-  
-  // Handle search query input
+
   const handleSearch = (event) => {
     setSearchQuery(event.target.value);
   };
-  
 
-  const structuredCategories = [
-    { name: "Tech News", slug: "tech-news" },
-    { name: "Comparisons", slug: "comparisons" },
-    { name: "How-To Guides", slug: "how-to-guides" },
+  const navLinks = [
     {
-      name: "Tech Products",
-      slug: "tech-products",
-      isDropdown: true,
-      children: dropdownCategories.map((cat) => ({
-        name: cat.name,
-        slug: cat.slug,
-      })),
+      name: "Blog",
+      path: "/blog",
+      icon: <FaBlog className="text-xl" />,
     },
+    {
+      name: "Store",
+      path: "/store",
+      icon: <FaStore className="text-xl" />,
+    },
+    {
+      name: "Cart",
+      path: "/cart",
+      icon: <FaShoppingCart className="text-xl" />,
+      badge: items.length > 0 ? items.length : null
+    }
   ];
 
-  return (
-    <nav className="bg-[#1E293B] text-white shadow-md px-6 py-4 flex items-center justify-between w-full relative z-[999]">
-  {/* Left Section */}
-  <div className="flex items-center space-x-4">
-    {user && (
-      <button onClick={toggleSidebar} className="focus:outline-none">
-        <img
-          src={user?.avatar || "/default-avatar.png"}
-          alt="User Avatar"
-          className="w-8 h-8 rounded-full border-2 border-white"
-        />
-      </button>
-    )}
-    <Link to="/dashboard">
-      <TechiertLogo className="w-20" />
-    </Link>
-  </div>
+  // Add My Orders for logged-in users
+  if (user) {
+    navLinks.push({
+      name: "My Orders",
+      path: "/my-orders",
+      icon: <FaClipboardList className="text-xl" />
+    });
+  }
 
-  {/* Desktop Navbar */}
-  <div className="hidden md:flex items-center space-x-6">
-    <ul className="flex space-x-6">
-      {structuredCategories.map((category) => (
-        <li
-          key={category.name}
-          className="relative group"
-          onMouseEnter={() => category.isDropdown && setHoveredDropdown(category.name)}
-          onMouseLeave={() => setHoveredDropdown(null)}
-        >
-          {category.isDropdown ? (
-            <>
-              <Link
-                to={`/dashboard/category/${category.slug}`}
-                className="flex items-center gap-1 hover:text-[#E7000B]"
-              >
-                {category.name} <FaChevronDown />
-              </Link>
+  return (
+    <nav className="bg-[#1E293B] border-b border-slate-700/50 text-white shadow-lg sticky top-0 z-[999]">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between h-16 px-4">
+          {/* Left Section */}
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={toggleSidebar} 
+              className="p-2 hover:bg-slate-700/50 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+              aria-label="Toggle Sidebar"
+            >
+              <FaBars className="text-xl" />
+            </button>
+            <Link to="/dashboard" className="flex items-center">
+              <TechiertLogo className="h-8 w-auto" />
+            </Link>
+          </div>
+
+          {/* Center Section - Navigation Links */}
+          <div className="hidden lg:flex items-center justify-center flex-1 px-4">
+            <div className="flex items-center space-x-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 relative group"
+                >
+                  <span className="flex items-center gap-2">
+                    {link.icon}
+                    <span>{link.name}</span>
+                  </span>
+                  {link.badge && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                      {link.badge}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Section - Search Only */}
+          <div className="flex items-center">
+            <div className="hidden md:block relative">
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search blogs..."
+                  className="w-64 pl-10 pr-4 py-2 bg-slate-700/50 text-white placeholder-slate-400 rounded-lg border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  value={searchQuery}
+                  onChange={handleSearch}
+                />
+              </div>
               <AnimatePresence>
-                {hoveredDropdown === category.name && (
-                  <motion.ul
-                    initial={{ opacity: 0, y: -5 }}
+                {searchResults.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute left-0 top-full bg-[#1E293B] text-white shadow-lg rounded-md w-56 z-[999]">
-                    {category.children.map((child, index) => (
-                      <li
-                        key={index}
-                        className="px-4 py-2 hover:bg-gray-700"
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-lg shadow-lg border border-slate-700 overflow-hidden"
+                  >
+                    {searchResults.map((result) => (
+                      <Link
+                        key={result._id}
+                        to={`/blog/${result.slug}`}
+                        onClick={() => setSearchQuery("")}
+                        className="block px-4 py-3 hover:bg-slate-700/50 border-b border-slate-700/50 last:border-0"
                       >
-                        <Link to={`/dashboard/category/${child.slug}`}>{child.name}</Link>
-                      </li>
+                        <h3 className="font-medium text-white">{result.title}</h3>
+                        <p className="text-sm text-slate-400 mt-1 line-clamp-2">{result.excerpt}</p>
+                      </Link>
                     ))}
-                  </motion.ul>
+                  </motion.div>
                 )}
               </AnimatePresence>
-            </>
-          ) : (
-            <Link
-              to={`/dashboard/category/${category.slug}`}
-              className="hover:text-[#E7000B]"
-            >
-              {category.name}
-            </Link>
-          )}
-        </li>
-      ))}
-    </ul>
-  </div>
-
-  {/* Search Bar */}
-  <div className="hidden md:block relative ml-4 w-72 z-[999]">
-    <FaSearch className="absolute left-3 top-3 text-gray-400" />
-    <input
-      type="text"
-      placeholder="Search blogs..."
-      className="px-10 py-2 rounded-lg bg-gray-100 text-black w-full"
-      value={searchQuery}
-      onChange={handleSearch}
-    />
-    <AnimatePresence>
-      {searchResults.length > 0 && (
-        <motion.ul
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -5 }}
-          transition={{ duration: 0.2 }}
-          className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[1000]" // Increased z-index here
-        >
-          {searchResults.map((result, index) => (
-            <li key={index} className="px-4 py-2 hover:bg-gray-200">
-              <Link to={`/blog/${result.slug}`} onClick={() => setSearchQuery("")}>
-                {result.title}
-              </Link>
-            </li>
-          ))}
-        </motion.ul>
-      )}
-    </AnimatePresence>
-  </div>
-
-  {/* Right Section (Login Button) */}
-  {!user && (
-    <div className="hidden md:flex items-center ml-6">
-      <Link
-        to="/login"
-        className="bg-[#E7000B] hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-colors duration-300"
-      >
-        Login
-      </Link>
-    </div>
-  )}
-
-  {/* Mobile Menu Toggle */}
-  <button
-    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-    className="md:hidden text-white text-2xl"
-  >
-    ☰
-  </button>
-
-  {/* Mobile Menu */}
-  <AnimatePresence>
-    {mobileMenuOpen && (
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "100%" }}
-        transition={{ duration: 0.4 }}
-        className="fixed inset-0 bg-[#1E293B] text-white flex flex-col items-center space-y-4 pt-20 z-[999] w-full h-screen"
-      >
-        <button
-          onClick={() => setMobileMenuOpen(false)}
-          className="absolute top-5 right-5 text-3xl"
-        >
-          <FaTimes />
-        </button>
-
-        <div className="w-4/5 relative z-[999]">
-          <FaSearch className="absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search categories..."
-            className="w-full px-10 py-2 rounded-lg bg-white text-black"
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-          <AnimatePresence>
-            {searchResults.length > 0 && (
-              <motion.ul
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.2 }}
-                className="absolute left-0 top-full w-full bg-white text-black rounded-md shadow-lg z-[1000]" // Increased z-index here as well
-              >
-                {searchResults.map((result, index) => (
-                  <li key={index} className="px-4 py-2 hover:bg-gray-200">
-                    <Link to={`/blog/${result.slug}`} onClick={() => setSearchQuery("")}>
-                      {result.title}
-                    </Link>
-                  </li>
-                ))}
-              </motion.ul>
-            )}
-          </AnimatePresence>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div className="w-full flex flex-col items-center space-y-3 mt-6">
-          {structuredCategories.map((category) => (
-            <Link
-              key={category.name}
-              to={`/dashboard/category/${category.slug}`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {category.name}
-            </Link>
-          ))}
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden border-t border-slate-700/50"
+          >
+            <div className="px-4 py-3 space-y-3">
+              {/* Mobile Search */}
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search blogs..."
+                  className="w-full pl-10 pr-4 py-2 bg-slate-700/50 text-white placeholder-slate-400 rounded-lg border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={searchQuery}
+                  onChange={handleSearch}
+                />
+              </div>
 
-          {/* Mobile Login Button */}
-          {!user && (
-            <Link
-              to="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="mt-4 bg-[#E7000B] hover:bg-red-700 text-white px-6 py-2 rounded-xl"
-            >
-              Login
-            </Link>
-          )}
-        </div>
-      </motion.div>
-    )}
-  </AnimatePresence>
-</nav>
+              {/* Mobile Navigation */}
+              {navLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md text-slate-300 hover:text-white hover:bg-slate-700/50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.icon}
+                  <span>{link.name}</span>
+                  {link.badge && (
+                    <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      {link.badge}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Menu Toggle */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="lg:hidden fixed top-4 right-4 p-2 rounded-lg bg-slate-700/50 text-white hover:bg-slate-600/50 transition-all duration-200"
+      >
+        {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+      </button>
+    </nav>
   );
 };
 

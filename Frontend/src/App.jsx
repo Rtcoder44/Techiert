@@ -1,12 +1,19 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from "./context/authContext";
+import { useDispatch } from "react-redux";
+import { fetchUserCart, initializeCart } from "./redux/slices/cartSlice";
 import "./index.css";
+import { AuthProvider } from "./context/authContext";
+import PrivateRoute from "./components/PrivateRoute";
+import AdminRoute from "./components/AdminRoute";
 
 // Auth pages
 import Signup from "./pages/signup.page";
@@ -16,6 +23,7 @@ import ResetPasswordPage from "./pages/resetPassword.page";
 
 // Dashboard & Blog
 import DashboardPage from "./pages/dashboard.page";
+import BlogHome from "./pages/BlogHome";
 import CreatePostPage from "./pages/createPostPage";
 import ManageBlog from "./pages/manageBlog";
 import ManageCategoryPage from "./pages/manageCategoryPage";
@@ -34,6 +42,19 @@ import Contact from "./pages/legalPages/contact";
 import About from "./pages/legalPages/aboutUsPage";
 import NotFound from "./pages/NotFound";
 
+// Product management
+import ManageProduct from "./pages/manageProduct";
+import AddProduct from "./pages/addProduct";
+
+// Pages
+import Home from "./pages/Home";
+import Store from "./pages/Store";
+import Cart from "./components/cart/Cart";
+import SingleProduct from './pages/SingleProduct';
+import CheckoutFlow from './components/checkout/CheckoutFlow';
+import MyOrders from './pages/MyOrders';
+import GuestOrders from './pages/GuestOrders';
+
 // Spinner component
 const Spinner = () => (
   <div className="flex justify-center items-center h-screen">
@@ -41,8 +62,19 @@ const Spinner = () => (
   </div>
 );
 
-function App() {
+const AppContent = () => {
   const { user, loading } = useAuth();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        dispatch(fetchUserCart());
+      } else {
+        dispatch(initializeCart());
+      }
+    }
+  }, [user, loading, dispatch]);
 
   if (loading) return <Spinner />;
 
@@ -50,104 +82,134 @@ function App() {
     <Router>
       <Suspense fallback={<Spinner />}>
         <Routes>
-          {/* ✅ Redirect from root to dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-          {/* ✅ Public Auth Routes */}
-          <Route
-            path="/signup"
-            element={!user ? <Signup /> : <Navigate to="/dashboard" replace />}
-          />
-          <Route
-            path="/login"
-            element={!user ? <Login /> : <Navigate to="/dashboard" replace />}
-          />
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          
+          {/* Blog Routes */}
+          <Route path="/blog" element={<BlogHome />} />
+          <Route path="/blog/:slug" element={<SinglePostPage />} />
+          <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/saved-posts" element={<SavedPosts />} />
+          
+          {/* Store Routes */}
+          <Route path="/store" element={<Store />} />
+          <Route path="/store/product/:slug" element={<SingleProduct />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/guest-orders" element={<GuestOrders />} />
 
-          {/* ✅ Admin-only Routes */}
+          {/* Dashboard Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/dashboard/create-post"
             element={
-              user?.role === "admin" ? (
+              <PrivateRoute>
                 <CreatePostPage />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
+              </PrivateRoute>
             }
           />
           <Route
             path="/dashboard/manage-blogs"
             element={
-              user?.role === "admin" ? (
+              <PrivateRoute>
                 <ManageBlog />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
+              </PrivateRoute>
             }
           />
           <Route
-            path="/dashboard/analytics/blog/:blogId"
+            path="/dashboard/manage-categories"
             element={
-              user?.role === "admin" ? (
-                <SingleBlogAnalytics />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            }
-          />
-          <Route
-            path="/dashboard/manage-category"
-            element={
-              user?.role === "admin" ? (
+              <AdminRoute>
                 <ManageCategoryPage />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            }
-          />
-          <Route
-            path="/dashboard/manage-users"
-            element={
-              user?.role === "admin" ? (
-                <ManageUsers />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
+              </AdminRoute>
             }
           />
           <Route
             path="/dashboard/analytics"
             element={
-              user?.role === "admin" ? (
+              <AdminRoute>
                 <AnalyticsPage />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/dashboard/blog-analytics/:blogId"
+            element={
+              <AdminRoute>
+                <SingleBlogAnalytics />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/dashboard/manage-products"
+            element={
+              <AdminRoute>
+                <ManageProduct />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/dashboard/add-product"
+            element={
+              <AdminRoute>
+                <AddProduct />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/dashboard/users"
+            element={
+              <AdminRoute>
+                <ManageUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/dashboard/settings"
+            element={
+              <PrivateRoute>
+                <ProfileSettings />
+              </PrivateRoute>
             }
           />
 
-          {/* ✅ Public Content Routes */}
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/category/:slug" element={<CategoryPage />} />
-          <Route path="/blog/:slug" element={<SinglePostPage />} />
-
-          {/* ✅ User Routes */}
-          <Route path="/dashboard/saved-posts" element={<SavedPosts />} />
-          <Route path="/dashboard/profile-settings" element={<ProfileSettings />} />
-
-          {/* ✅ Legal Pages */}
+          {/* Legal Routes */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
-
-          {/* ✅ Catch-all for Not Found */}
+          
+          {/* Checkout Route */}
+          <Route path="/checkout" element={<CheckoutFlow />} />
+          
+          {/* My Orders Route */}
+          <Route path="/my-orders" element={<MyOrders />} />
+          
+          {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </Router>
   );
-}
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+      <ToastContainer />
+    </AuthProvider>
+  );
+};
 
 export default App;

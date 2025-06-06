@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../context/authContext";
 import BlogEditModal from "../manageBlog/blogEditModal";
+import { showNotification, showAuthError, showErrorMessage } from '../../utils/notification';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -14,7 +15,7 @@ const BlogTable = ({ blogs, setBlogs }) => {
 
   const handleDelete = async (id) => {
     if (!user || user.role !== "admin") {
-      alert("Unauthorized: Only an admin can delete blogs!");
+      showAuthError("Only an admin can delete blogs!");
       return;
     }
 
@@ -31,7 +32,7 @@ const BlogTable = ({ blogs, setBlogs }) => {
       }));
     } catch (error) {
       console.error("Error deleting blog:", error);
-      alert("Failed to delete the blog. Please try again.");
+      showErrorMessage(error);
     }
   };
 

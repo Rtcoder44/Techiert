@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useAuth } from "../../context/authContext"; // ✅ Import Auth Context
+import { showNotification, showAuthError, showValidationError, showErrorMessage } from '../../utils/notification';
 
 const PublishControls = ({
   postId, // ✅ This will store the draft ID if updating
@@ -13,19 +14,19 @@ const PublishControls = ({
   const handlePublish = async () => {
     // Check if title and content are provided
     if (!postTitle || !editorContent) {
-      alert("⚠️ Title and content are required.");
+      showValidationError("Title and content are required");
       return;
     }
 
     // Check if the user is logged in
     if (!user) {
-      alert("❌ User session expired. Please log in again.");
+      showAuthError("User session expired. Please log in again");
       return;
     }
 
     // Check if cover image is provided
     if (!coverImage) {
-      alert("⚠️ Please upload a cover image.");
+      showValidationError("Please upload a cover image");
       return;
     }
 
@@ -64,14 +65,14 @@ const PublishControls = ({
       });
 
       if (response.status === 200 || response.status === 201) {
-        alert(`✅ Post ${postStatus} successfully!`);
+        showNotification.success(`Post ${postStatus} successfully!`);
         onPublish(response.data);
       } else {
         throw new Error("Unexpected response from the server.");
       }
     } catch (error) {
       console.error("❌ Publishing failed:", error.response?.data || error.message);
-      alert(`🚨 Publishing failed: ${error.response?.data?.error || "Something went wrong"}`);
+      showErrorMessage(error);
     } finally {
       setPublishing(false);
     }

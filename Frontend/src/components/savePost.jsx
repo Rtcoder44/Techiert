@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaBookmark } from "react-icons/fa";
 import { useAuth } from "../context/authContext";
+import { showAuthError } from '../utils/notification';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -35,7 +36,7 @@ const SavePostButton = ({ postId }) => {
   // ✅ Toggle save/unsave
   const handleToggleSave = async () => {
     if (!user) {
-      alert("Please login to save posts.");
+      showAuthError("Please login to save posts");
       return;
     }
 

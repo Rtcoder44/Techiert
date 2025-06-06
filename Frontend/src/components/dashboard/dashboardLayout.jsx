@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import DashboardSidebar from "./dashboardSidebar";
 import DashboardNavbar from "./dashboardNavbar";
-import Footer from "./footer"; // ✅ New Footer Import
+import Footer from "./footer";
 import { useAuth } from "../../context/authContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 const DashboardLayout = ({ children }) => {
   const { user } = useAuth();
@@ -14,18 +15,41 @@ const DashboardLayout = ({ children }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F1F5F9] transition-all duration-300">
-      <div className="flex flex-1">
-        {/* Sidebar (Only visible when user is logged in) */}
-        {user && <DashboardSidebar isOpen={isOpen} toggleSidebar={toggleSidebar} />}
+    <div className="min-h-screen bg-slate-100">
+      {/* Sidebar */}
+      <DashboardSidebar isOpen={isOpen} toggleSidebar={toggleSidebar} />
 
-        {/* Main Layout */}
-        <div className={`flex flex-col flex-1 transition-all duration-300 ${user && isOpen ? "ml-64" : "ml-0"}`}>
-          <DashboardNavbar isOpen={isOpen} toggleSidebar={toggleSidebar} />
-          <main className="flex-1 p-6 bg-[#F1F5F9]">{children}</main>
-          <Footer /> {/* ✅ Footer placed here */}
-        </div>
-      </div>
+      {/* Main Content */}
+      <motion.div
+        className="flex flex-col min-h-screen"
+        animate={{ 
+          marginLeft: isOpen ? "256px" : "0" 
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
+        {/* Navbar */}
+        <DashboardNavbar isOpen={isOpen} toggleSidebar={toggleSidebar} />
+
+        {/* Main Content Area */}
+        <main className="flex-1 px-4 py-8">
+          <div className="max-w-7xl mx-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <Footer />
+      </motion.div>
     </div>
   );
 };

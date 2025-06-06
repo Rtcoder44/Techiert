@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../styles/auth.css"; // Import styles
+import { showNotification } from '../utils/notification';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const Signup = () => {
@@ -59,7 +60,7 @@ const Signup = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert(response.data.message);
+      showNotification.success(response.data.message);
       navigate("/login");
     } catch (error) {
       setServerError(error.response?.data?.error || "Something went wrong");

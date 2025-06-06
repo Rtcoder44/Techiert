@@ -7,6 +7,7 @@ import DOMPurify from "dompurify";
 import DashboardLayout from "../components/dashboard/dashboardLayout";
 import SavePostButton from "../components/savePost";
 import { Helmet } from "react-helmet-async";  // <-- import Helmet
+import { showAuthError } from '../utils/notification';
 
 const CommentsSection = lazy(() => import("../components/commentSection"));
 const RelatedPosts = lazy(() => import("../components/relatedPost"));
@@ -66,7 +67,10 @@ const SinglePostPage = () => {
   }, [fetchPost]);
 
   const handleLike = async () => {
-    if (!user) return alert("Please login to like the post.");
+    if (!user) {
+      showAuthError("Please login to like the post");
+      return;
+    }
 
     try {
       const { data } = await axios.post(

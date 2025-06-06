@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { showNotification, showErrorMessage } from '../../utils/notification';
 
 const CoverImageUploader = ({ coverImage, setCoverImage, postTitle }) => {
   const [previewImage, setPreviewImage] = useState(coverImage || null);
@@ -116,12 +117,12 @@ const CoverImageUploader = ({ coverImage, setCoverImage, postTitle }) => {
         setPreviewImage(response.data.imageUrl);
         setCoverImage(response.data.imageUrl); // Update state with uploaded URL
       } else {
-        alert("❌ Image upload failed.");
+        showErrorMessage("Image upload failed");
         setPreviewImage(null);
       }
     } catch (error) {
       console.error("❌ Image upload error:", error.response?.data || error.message);
-      alert("🚨 Failed to upload image.");
+      showErrorMessage(error);
       setPreviewImage(null);
     } finally {
       setUploading(false);
