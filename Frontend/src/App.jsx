@@ -92,7 +92,7 @@ const AppContent = () => {
           {/* Blog Routes */}
           <Route path="/blog" element={<BlogHome />} />
           <Route path="/blog/:slug" element={<SinglePostPage />} />
-          <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/blog/category/:slug" element={<CategoryPage />} />
           <Route path="/saved-posts" element={<SavedPosts />} />
           
           {/* Store Routes */}
