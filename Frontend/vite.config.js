@@ -7,4 +7,4 @@ export default defineConfig({
   build: {
     outDir: 'dist', // ✅ This makes the config explicit
   },
-})
+}) 

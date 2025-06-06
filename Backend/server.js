@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
+
 const { setCache, getCache } = require("./utils/redisClient");
+const Blog = require("./models/blogs.model");
 
 const app = express();
 
@@ -19,37 +21,48 @@ const allowedOrigins = [
   "https://www.techiert.com"
 ];
 
-// CORS config
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Allow tools like Postman
-    const cleanedOrigin = origin.replace(/\/$/, '');
-    if (allowedOrigins.includes(cleanedOrigin)) {
-      return callback(null, true);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`❌ CORS Error: Origin ${origin} is not allowed`);
+      callback(new Error("Not allowed by CORS"));
     }
-    console.log(`❌ CORS Error: Origin ${origin} is not allowed`);
-    callback(new Error("Not allowed by CORS"));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle pre-flight
+app.options("*", cors(corsOptions));
 
-// Routes
+// Import Routes
 const authRoute = require("./routes/auth.route");
 const blogRoute = require("./routes/blog.route");
 const categoryRoutes = require("./routes/category.route");
 const tagRoutes = require("./routes/tag.route");
 const analyticsRoute = require("./routes/analytics.route");
 const cacheController = require("./controllers/cache.controller");
+const productRoutes = require("./routes/product.routes");
+const productCategoryRoutes = require("./routes/productCategory.route");
+const cartRoutes = require("./routes/cart.routes");
+const addressRoutes = require("./routes/address.routes");
+const orderRoutes = require("./routes/order.routes");
 
+// Apply Routes
 app.use("/api/auth", authRoute);
 app.use("/api/blogs", blogRoute);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tags", tagRoutes);
 app.use("/api/analytics", analyticsRoute);
 app.use("/api/cache", cacheController);
+app.use("/api", productRoutes);
+app.use("/api/product-categories", productCategoryRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api", addressRoutes);
+app.use("/api", orderRoutes);
 
 // MongoDB Connection
 mongoose
@@ -60,14 +73,12 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// Health check
+// Health Check
 app.get("/homepage", (req, res) => {
   res.send("🔥 Techiert Backend is Running!");
 });
 
 // Redis-cached blog detail route
-const Blog = require("./models/blogs.model");
-
 app.get("/api/blogs/:slug", async (req, res) => {
   const { slug } = req.params;
   const cacheKey = `blog:${slug}`;
@@ -84,7 +95,7 @@ app.get("/api/blogs/:slug", async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    await setCache(cacheKey, post, 3600); // Cache for 1 hour
+    await setCache(cacheKey, post, 3600);
     console.log("✅ Cache set");
     return res.json(post);
   } catch (err) {
@@ -93,7 +104,7 @@ app.get("/api/blogs/:slug", async (req, res) => {
   }
 });
 
-// ✅ Dynamic Sitemap Route
+// Sitemap
 app.get("/sitemap.xml", async (req, res) => {
   try {
     const blogs = await Blog.find({}, "slug");
@@ -141,7 +152,6 @@ ${blogUrls.join("\n")}
   }
 });
 
-
-// Start server
+// Start Server
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`🚀 Server is running on port ${port}`));

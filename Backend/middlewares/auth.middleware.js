@@ -4,8 +4,10 @@ const Comment = require("../models/comments.model");
 // ✅ Strict Authentication Middleware
 exports.authMiddleware = (req, res, next) => {
   const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+  
   if (!token) {
-    return res.status(401).json({ error: "No token provided" });
+    console.log("❌ No token provided");
+    return res.status(401).json({ error: "Authentication required" });
   }
 
   try {
@@ -17,11 +19,10 @@ exports.authMiddleware = (req, res, next) => {
       role: decoded.role,
     };
 
-    console.log("✅ Updated req.user:", req.user);
     next();
   } catch (error) {
     console.error("❌ JWT Verification Failed:", error);
-    return res.status(401).json({ error: "Invalid token" });
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 };
 
@@ -43,14 +44,14 @@ exports.optionalAuthMiddleware = (req, res, next) => {
     }
   }
 
-  next(); // Always proceed, even if token is missing or invalid
+  next();
 };
 
 // ✅ Admin Only Middleware
 exports.adminMiddleware = (req, res, next) => {
   if (!req.user || req.user.role !== "admin") {
     console.log("⛔ Admin Access Denied!");
-    return res.status(403).json({ success: false, error: "⛔ Admin Access Only!" });
+    return res.status(403).json({ success: false, error: "Admin access required" });
   }
   next();
 };
@@ -58,7 +59,7 @@ exports.adminMiddleware = (req, res, next) => {
 // ✅ Admin or Owner (Comment)
 exports.isAdminOrOwner = async (req, res, next) => {
   if (!req.user || !req.user._id) {
-    return res.status(401).json({ error: "Unauthorized. Please login." });
+    return res.status(401).json({ error: "Authentication required" });
   }
 
   const comment = await Comment.findById(req.params.commentId);
