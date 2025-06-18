@@ -4,12 +4,13 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from "./context/authContext";
 import { useDispatch } from "react-redux";
-import { fetchUserCart, initializeCart } from "./redux/slices/cartSlice";
+import { initializeCart } from "./redux/slices/cartSlice";
 import "./index.css";
 import { AuthProvider } from "./context/authContext";
 import PrivateRoute from "./components/PrivateRoute";
@@ -41,6 +42,8 @@ import TermsOfService from "./pages/legalPages/termOfService";
 import Contact from "./pages/legalPages/contact";
 import About from "./pages/legalPages/aboutUsPage";
 import NotFound from "./pages/NotFound";
+import RefundPolicy from './pages/legalPages/refundPolicy';
+import ShippingPolicy from './pages/legalPages/shippingPolicy';
 
 // Product management
 import ManageProduct from "./pages/manageProduct";
@@ -62,6 +65,15 @@ const Spinner = () => (
   </div>
 );
 
+// ScrollTo component
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 const AppContent = () => {
   const { user, loading } = useAuth();
   const dispatch = useDispatch();
@@ -69,7 +81,7 @@ const AppContent = () => {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        dispatch(fetchUserCart());
+        dispatch(initializeCart());
       } else {
         dispatch(initializeCart());
       }
@@ -80,6 +92,7 @@ const AppContent = () => {
 
   return (
     <Router>
+      <ScrollToTop />
       <Suspense fallback={<Spinner />}>
         <Routes>
           {/* Public Routes */}
@@ -97,7 +110,7 @@ const AppContent = () => {
           
           {/* Store Routes */}
           <Route path="/store" element={<Store />} />
-          <Route path="/store/product/:slug" element={<SingleProduct />} />
+          <Route path="/store/product/:handle" element={<SingleProduct />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/guest-orders" element={<GuestOrders />} />
 
@@ -185,7 +198,9 @@ const AppContent = () => {
 
           {/* Legal Routes */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/termOfService" element={<TermsOfService />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/shipping-policy" element={<ShippingPolicy />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
           

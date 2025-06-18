@@ -19,10 +19,8 @@ const BlogEditModal = ({ blog, onClose, onUpdate }) => {
   const [tagInput, setTagInput] = useState("");
 
   useEffect(() => {
-    console.log("Fetching categories...");
     axios.get(`${API_BASE_URL}/api/categories`)
       .then(response => {
-        console.log("Categories fetched successfully:", response.data);
         setCategories(response.data);
       })
       .catch(error => console.error("Error fetching categories:", error));
@@ -46,12 +44,10 @@ const BlogEditModal = ({ blog, onClose, onUpdate }) => {
         status,
       };
   
-      console.log("Updating blog with data:", updatedBlog);
       await axios.put(`${API_BASE_URL}/api/blogs/${blog._id}`, updatedBlog, {
         withCredentials: true,
       });
   
-      console.log("Blog updated successfully");
       onUpdate(); // Refresh blog list
       onClose(); // Close modal
     } catch (error) {
@@ -86,13 +82,11 @@ const BlogEditModal = ({ blog, onClose, onUpdate }) => {
       if (!tags.includes(tagInput.trim())) {
         setTags([...tags, tagInput.trim()]);
       }
-      console.log("Added tag:", tagInput.trim());
       setTagInput("");
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    console.log("Removing tag:", tagToRemove);
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 

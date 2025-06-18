@@ -114,11 +114,11 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2">7. Children’s Privacy</h2>
+            <h2 className="text-2xl font-semibold mb-2">7. Children's Privacy</h2>
             <p>
               We do not knowingly collect data from children under 13. If you
               believe your child submitted personal data, please contact us and
-              we’ll delete it immediately.
+              we'll delete it immediately.
             </p>
           </section>
 
@@ -133,8 +133,8 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-2">9. Changes to This Policy</h2>
             <p>
-              We may update this policy occasionally. When we do, we’ll revise the
-              date above. You’re advised to review this page regularly.
+              We may update this policy occasionally. When we do, we'll revise the
+              date above. You're advised to review this page regularly.
             </p>
           </section>
 
@@ -154,6 +154,20 @@ const PrivacyPolicy = () => {
               📍 Village Bardiha, Post Jagdishpur Dharmadani,
               <br />
               District Kushinagar, 274149
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-2">11. Payment Information</h2>
+            <p>
+              When you make a purchase, your payment is processed securely by third-party payment gateways (such as Shopify Payments, Stripe, PayPal, UPI, etc.). We do not store your payment card details. Payment processors may collect and store your payment information in accordance with their own privacy policies. Please review Shopify's privacy policy at <a href="https://www.shopify.com/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">https://www.shopify.com/legal/privacy</a>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-2">12. Order Data & Retention</h2>
+            <p>
+              We retain order information (such as products purchased, shipping address, and contact details) for accounting, legal, and customer service purposes. Payment data is handled by the payment gateway and not stored on our servers.
             </p>
           </section>
         </div>

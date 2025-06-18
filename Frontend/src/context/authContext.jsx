@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, { withCredentials: true });
       setUser(null); // ✅ Remove user on logout
+      localStorage.removeItem('guestCart'); // Clear guest cart from localStorage
       dispatch(resetCart()); // Reset cart state
       dispatch(initializeCart()); // Initialize guest cart
     } catch (error) {

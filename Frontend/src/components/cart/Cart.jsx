@@ -3,62 +3,57 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaTrash } from 'react-icons/fa';
 import DashboardLayout from '../dashboard/dashboardLayout';
-import { removeFromGuestCart, updateGuestCartItemQuantity, removeFromUserCart, updateCartItem } from '../../redux/slices/cartSlice';
-import CheckoutFlow from '../checkout/CheckoutFlow';
-import LoginGuestModal from '../checkout/LoginGuestModal';
+import { removeFromGuestCart, updateGuestCartItemQuantity, createShopifyCheckout } from '../../redux/slices/cartSlice';
 import { useAuth } from '../../context/authContext';
 import { showNotification } from '../../utils/notification';
+import LoginGuestModal from '../checkout/LoginGuestModal';
 
 const Cart = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useAuth();
   const { items, total, isGuest } = useSelector((state) => state.cart);
-  const [showCheckout, setShowCheckout] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const handleQuantityChange = async (productId, quantity) => {
+  // Defensive price calculation
+  const getItemPrice = (item) => parseFloat(item.product.price || item.product.variantPrice || 0);
+  const subtotal = items.reduce((acc, item) => acc + (getItemPrice(item) * item.quantity), 0);
+
+  const handleQuantityChange = async (variantId, quantity) => {
     if (quantity < 1) return;
-
-    try {
-      if (isGuest) {
-        dispatch(updateGuestCartItemQuantity({ productId, quantity }));
-      } else {
-        dispatch(updateCartItem({ productId, quantity }));
-      }
-    } catch (error) {
-      console.error('Error updating quantity:', error);
+    if (isGuest) {
+      dispatch(updateGuestCartItemQuantity({ variantId, quantity }));
     }
+    // For logged-in users, do nothing (Shopify handles cart)
   };
 
-  const handleRemoveItem = async (productId) => {
-    try {
-      if (isGuest) {
-        dispatch(removeFromGuestCart(productId));
-      } else {
-        dispatch(removeFromUserCart(productId));
-      }
-    } catch (error) {
-      console.error('Error removing item:', error);
+  const handleRemoveItem = async (variantId) => {
+    if (isGuest) {
+      dispatch(removeFromGuestCart(variantId));
     }
+    // For logged-in users, do nothing (Shopify handles cart)
   };
 
-  const handleProceedToCheckout = () => {
+  const handleProceedToCheckout = async () => {
     if (items.length === 0) {
       showNotification.info('Your cart is empty');
       return;
     }
-
-    if (!user) {
+    if (!user && isGuest) {
       setShowLoginModal(true);
-    } else {
-      setShowCheckout(true);
+      return;
     }
-  };
-
-  const handleContinueAsGuest = () => {
-    setShowLoginModal(false);
-    setShowCheckout(true);
+    try {
+      const result = await dispatch(createShopifyCheckout({ items: items.map(item => ({ variantId: item.variantId, quantity: item.quantity })) })).unwrap();
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      } else {
+        showNotification.error('No checkout URL returned');
+      }
+    } catch (error) {
+      showNotification.error('Failed to initiate checkout');
+      console.error(error);
+    }
   };
 
   return (
@@ -85,7 +80,7 @@ const Cart = () => {
                 <div className="p-6 space-y-6">
                   {items.map((item) => (
                     <div
-                      key={item.productId}
+                      key={item.variantId}
                       className="flex items-center justify-between border-b pb-6 last:border-b-0 last:pb-0"
                     >
                       <div className="flex items-center flex-1">
@@ -96,21 +91,21 @@ const Cart = () => {
                         />
                         <div className="ml-4">
                           <h3 className="font-medium">{item.product.title}</h3>
-                          <p className="text-gray-600">${item.product.price.toFixed(2)}</p>
+                          <p className="text-gray-600">${getItemPrice(item).toFixed(2)}</p>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center border rounded-md">
                           <button
-                            onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
+                            onClick={() => handleQuantityChange(item.variantId, item.quantity - 1)}
                             className="px-3 py-1 hover:bg-gray-100"
                           >
                             -
                           </button>
                           <span className="px-3 py-1 border-x">{item.quantity}</span>
                           <button
-                            onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
+                            onClick={() => handleQuantityChange(item.variantId, item.quantity + 1)}
                             className="px-3 py-1 hover:bg-gray-100"
                           >
                             +
@@ -118,7 +113,7 @@ const Cart = () => {
                         </div>
 
                         <button
-                          onClick={() => handleRemoveItem(item.productId)}
+                          onClick={() => handleRemoveItem(item.variantId)}
                           className="text-red-500 hover:text-red-600"
                         >
                           <FaTrash />
@@ -137,7 +132,7 @@ const Cart = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
@@ -147,7 +142,7 @@ const Cart = () => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total</span>
                       <span className="text-xl font-bold text-blue-600">
-                        ${total.toFixed(2)}
+                        ${subtotal.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -170,20 +165,26 @@ const Cart = () => {
             </div>
           </div>
         )}
+
+        <LoginGuestModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onContinueAsGuest={async () => {
+            setShowLoginModal(false);
+            try {
+              const result = await dispatch(createShopifyCheckout({ items: items.map(item => ({ variantId: item.variantId, quantity: item.quantity })) })).unwrap();
+              if (result.checkoutUrl) {
+                window.location.href = result.checkoutUrl;
+              } else {
+                showNotification.error('No checkout URL returned');
+              }
+            } catch (error) {
+              showNotification.error('Failed to initiate checkout');
+              console.error(error);
+            }
+          }}
+        />
       </div>
-
-      {/* Login/Guest Modal */}
-      <LoginGuestModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onContinueAsGuest={handleContinueAsGuest}
-      />
-
-      {/* Checkout Modal */}
-      <CheckoutFlow
-        isOpen={showCheckout}
-        onClose={() => setShowCheckout(false)}
-      />
     </DashboardLayout>
   );
 };

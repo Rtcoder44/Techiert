@@ -20,10 +20,10 @@ router.get('/', getCart);
 router.post('/add', addToCart);
 
 // Remove item from cart
-router.delete('/item/:productId', removeFromCart);
+router.delete('/item/:variantId', removeFromCart);
 
 // Update item quantity
-router.put('/item/:productId', updateCartItem);
+router.put('/item/:variantId', updateCartItem);
 
 // Clear cart
 router.delete('/', clearCart);

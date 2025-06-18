@@ -27,7 +27,7 @@ const TermsOfService = () => {
           <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">2. Use of Website</h2>
           <p>
             You agree to use this website for lawful purposes only. You must not
-            use the site in a way that may cause damage, interfere with others’
+            use the site in a way that may cause damage, interfere with others'
             use, or violate any laws or regulations.
           </p>
         </section>
@@ -105,6 +105,43 @@ const TermsOfService = () => {
               Dharmadani, District Kushinagar, 274149
             </li>
           </ul>
+        </section>
+
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">10. Orders & Payments</h2>
+          <p>
+            By placing an order on Techiert.com, you agree to provide accurate and complete information. Payments are processed securely via third-party payment gateways (such as Shopify Payments, Stripe, PayPal, UPI, etc.). We do not store your payment card details. All transactions are subject to verification and approval by the payment processor.
+          </p>
+        </section>
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">11. Shipping & Delivery</h2>
+          <p>
+            Shipping times and delivery estimates are provided at checkout. We are not responsible for delays caused by carriers or customs. Please review our <a href="/shipping-policy" className="text-blue-600 hover:underline">Shipping Policy</a> for details.
+          </p>
+        </section>
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">12. Returns & Refunds</h2>
+          <p>
+            Please review our <a href="/refund-policy" className="text-blue-600 hover:underline">Refund & Return Policy</a> for information on returns, exchanges, and refunds. Refunds are processed according to the payment gateway and Shopify's policies.
+          </p>
+        </section>
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">13. User Accounts</h2>
+          <p>
+            You may be required to create an account to access certain features. You are responsible for maintaining the confidentiality of your account and password.
+          </p>
+        </section>
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">14. Limitation of Liability</h2>
+          <p>
+            To the fullest extent permitted by law, Techiert.com and its affiliates are not liable for any indirect, incidental, or consequential damages arising from your use of the site, products, or services, including payment or delivery issues.
+          </p>
+        </section>
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">15. Dispute Resolution & Governing Law</h2>
+          <p>
+            Any disputes arising from your use of this website or purchases made through it will be governed by the laws of India. Disputes will be resolved through negotiation, and if unresolved, through the courts of Kushinagar, Uttar Pradesh, India.
+          </p>
         </section>
 
         <div className="text-center mt-10 text-xs text-gray-500">

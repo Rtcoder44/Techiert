@@ -23,7 +23,7 @@ const About = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          At Techiert, we’re passionate about technology, sharing knowledge, and helping users stay updated with the latest in tech. Our platform is designed for tech enthusiasts, learners, and professionals alike.
+          At Techiert, we're passionate about technology, sharing knowledge, and helping users stay updated with the latest in tech. Our platform is designed for tech enthusiasts, learners, and professionals alike.
         </motion.p>
 
         {/* Mission, Vision, Promise */}
@@ -82,7 +82,7 @@ const About = () => {
             whileInView={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            Hey! I’m Ritik — a passionate full stack developer and the founder of <strong>Techiert.com</strong>. I love building meaningful digital products, especially ones that empower and educate.
+            Hey! I'm Ritik — a passionate full stack developer and the founder of <strong>Techiert.com</strong>. I love building meaningful digital products, especially ones that empower and educate.
             Techiert is my brainchild, built from the ground up using the <strong>MERN</strong> stack and a deep desire to share knowledge with a growing tech community.
           </motion.p>
 
@@ -115,7 +115,7 @@ const About = () => {
           {/* Freelancer Pitch */}
           <p className="mt-4 text-gray-600 leading-relaxed">
             Looking to build a modern, responsive, and scalable website? Whether it's a blog, portfolio, business site, or web app —
-            I help clients bring their ideas to life with clean code and creative solutions. Let’s build something awesome together!
+            I help clients bring their ideas to life with clean code and creative solutions. Let's build something awesome together!
           </p>
 
           {/* Social & CTA */}
@@ -146,6 +146,10 @@ const About = () => {
             Hire Me
           </motion.a>
         </motion.div>
+
+        <div className="mt-16 text-center text-gray-500 text-sm">
+          <strong>Shop with Confidence:</strong> All payments on Techiert.com are processed securely via trusted payment gateways. Your privacy and security are our top priorities.
+        </div>
       </div>
     </DashboardLayout>
   );

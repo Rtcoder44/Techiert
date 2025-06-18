@@ -27,7 +27,6 @@ const EditorPage = () => {
   const [editorContent, setEditorContent] = useState(() => {
     // Initialize editor content from localStorage
     const savedContent = localStorage.getItem("draftContent");
-    console.log("Initial editor content from localStorage:", savedContent);
     return savedContent || "";
   });
   const [metaTitle, setMetaTitle] = useState("");
@@ -66,7 +65,6 @@ const EditorPage = () => {
   // Auto-save draft when data changes
   useEffect(() => {
     if (debouncedEditorContent) {
-      console.log("Saving editor content to localStorage");
       localStorage.setItem("draftContent", debouncedEditorContent);
     }
     
@@ -107,7 +105,6 @@ const EditorPage = () => {
   };
 
   const handleEditorChange = (newContent) => {
-    console.log("Editor onChange called");
     setEditorContent(newContent);
   };
 

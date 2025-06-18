@@ -16,7 +16,7 @@ const Home = () => {
       try {
         const [postsRes, productsRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/api/posts?limit=3&featured=true`),
-          axios.get(`${API_BASE_URL}/api/products?limit=4&featured=true`)
+          axios.get(`${API_BASE_URL}/api/shopify/products?limit=4&featured=true`)
         ]);
         setFeaturedPosts(postsRes.data.posts);
         setFeaturedProducts(productsRes.data.products);
@@ -40,36 +40,22 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
+      <section className="relative bg-blue-600 text-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Welcome to Techiert
+              Welcome to Our Store
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              Your one-stop destination for tech insights and premium products
+            <p className="text-xl md:text-2xl mb-8">
+              Discover amazing products at great prices
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link
-                to="/store"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-white text-blue-600 hover:bg-blue-50 transition-colors"
-              >
-                <FaShoppingBag className="mr-2" />
-                Browse Store
-              </Link>
-              <Link
-                to="/blogs"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors"
-              >
-                <FaBlog className="mr-2" />
-                Read Blog
-              </Link>
-            </div>
-          </motion.div>
+            <Link
+              to="/store"
+              className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50"
+            >
+              Shop Now <FaArrowRight className="ml-2" />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -96,32 +82,37 @@ const Home = () => {
                 </div>
               ))
             ) : (
-              featuredProducts.map((product) => (
+              featuredProducts.map(product => (
                 <motion.div
-                  key={product._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                  key={product.id}
+                  whileHover={{ y: -5 }}
+                  className="bg-white rounded-lg shadow-md overflow-hidden"
                 >
-                  <div className="relative pb-[100%]">
-                    <img
-                      src={product.images[0]?.thumbnail || product.images[0]?.url}
-                      alt={product.title}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.title}</h3>
-                    <div className="flex items-center justify-between">
-                      <span className="text-blue-600 font-bold">{formatPrice(product.price)}</span>
-                      <Link
-                        to={`/store/product/${product._id}`}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        View Details
-                      </Link>
+                  <Link to={`/store/product/${product.id}`}>
+                    <div className="relative pb-[75%]">
+                      <img
+                        src={product.image || '/default-product.jpg'}
+                        alt={product.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                     </div>
-                  </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {product.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                        {product.description}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xl font-bold text-gray-900">
+                          {formatPrice(product.price)}
+                        </span>
+                        <button className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+                          <FaShoppingBag />
+                        </button>
+                      </div>
+                    </div>
+                  </Link>
                 </motion.div>
               ))
             )}
@@ -133,60 +124,63 @@ const Home = () => {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Latest Articles</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Latest Blog Posts</h2>
             <Link
-              to="/blogs"
+              to="/blog"
               className="inline-flex items-center text-blue-600 hover:text-blue-700"
             >
               View All <FaArrowRight className="ml-2" />
             </Link>
           </div>
-
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {loading ? (
               Array(3).fill(0).map((_, i) => (
-                <div key={i} className="animate-pulse">
+                <div key={i} className="animate-pulse bg-gray-50 rounded-lg p-4">
                   <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 </div>
               ))
             ) : (
-              featuredPosts.map((post) => (
-                <motion.article
+              featuredPosts.map(post => (
+                <motion.div
                   key={post._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                  whileHover={{ y: -5 }}
+                  className="bg-gray-50 rounded-lg overflow-hidden"
                 >
-                  {post.coverImage && (
-                    <img
-                      src={post.coverImage}
-                      alt={post.title}
-                      className="w-full h-48 object-cover"
-                    />
-                  )}
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      <Link to={`/blog/${post.slug}`} className="hover:text-blue-600">
-                        {post.title}
-                      </Link>
-                    </h3>
-                    <p className="text-gray-600 mb-4 line-clamp-2">{post.excerpt}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <FaTag className="mr-2" />
-                        <span>{post.category}</span>
-                      </div>
-                      <Link
-                        to={`/blog/${post.slug}`}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        Read More
-                      </Link>
+                  <Link to={`/blog/${post.slug}`}>
+                    <div className="relative pb-[56.25%]">
+                      <img
+                        src={post.coverImage || '/default-blog.jpg'}
+                        alt={post.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                     </div>
-                  </div>
-                </motion.article>
+                    <div className="p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <FaTag className="text-blue-600" />
+                        <span className="text-sm text-gray-600">
+                          {post.category?.name || 'Uncategorized'}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-gray-600 mb-4 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-blue-600 hover:text-blue-700">
+                          Read More →
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
               ))
             )}
           </div>

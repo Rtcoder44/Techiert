@@ -6,6 +6,10 @@ const cartItemSchema = new mongoose.Schema({
     ref: 'Product',
     required: true
   },
+  variantId: {
+    type: String, // Shopify variantId (gid://shopify/ProductVariant/xxx)
+    required: true
+  },
   quantity: {
     type: Number,
     required: true,

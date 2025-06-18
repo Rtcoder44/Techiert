@@ -4,7 +4,14 @@ const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false // Optional for guest orders
+    required: function() {
+      return !this.guestEmail; // userId is required only if not a guest order
+    }
+  },
+  shopifyOrderId: {
+    type: String,
+    required: true,
+    unique: true
   },
   items: [{
     productId: {
@@ -27,41 +34,16 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
   shippingAddress: {
-    fullName: {
-      type: String,
-      required: true
-    },
-    addressLine1: {
-      type: String,
-      required: true
-    },
-    addressLine2: String,
-    city: {
-      type: String,
-      required: true
-    },
-    state: {
-      type: String,
-      required: true
-    },
-    postalCode: {
-      type: String,
-      required: true
-    },
-    country: {
-      type: String,
-      required: true,
-      default: 'India'
-    },
-    phone: {
-      type: String,
-      required: true
-    }
+    street: String,
+    city: String,
+    state: String,
+    country: String,
+    zipCode: String
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
-    default: 'confirmed'
+    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending'
   },
   orderNumber: {
     type: String,
@@ -69,12 +51,24 @@ const orderSchema = new mongoose.Schema({
   },
   guestEmail: {
     type: String,
+    required: function() {
+      return !this.userId; // guestEmail is required only if no userId
+    },
     validate: {
       validator: function(v) {
-        // Only required for guest orders
-        return this.userId || v;
+        return !this.userId || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
       },
-      message: 'Email is required for guest orders'
+      message: props => `${props.value} is not a valid email address!`
+    }
+  },
+  email: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: props => `${props.value} is not a valid email address!`
     }
   }
 }, {
@@ -83,16 +77,11 @@ const orderSchema = new mongoose.Schema({
 
 // Generate unique order number before saving
 orderSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    const date = new Date();
-    const year = date.getFullYear().toString().substr(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const count = await this.constructor.countDocuments();
-    this.orderNumber = `ORD${year}${month}${(count + 1).toString().padStart(5, '0')}`;
+  if (!this.orderNumber) {
+    const count = await mongoose.model('Order').countDocuments();
+    this.orderNumber = `ORD${Date.now()}${count + 1}`;
   }
   next();
 });
 
-const Order = mongoose.model('Order', orderSchema);
-
-module.exports = Order; 
+module.exports = mongoose.model('Order', orderSchema); 

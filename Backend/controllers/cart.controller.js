@@ -32,7 +32,7 @@ exports.getCart = async (req, res) => {
 // Add item to cart
 exports.addToCart = async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId, variantId, quantity, price } = req.body;
 
     // Validate product
     const product = await Product.findById(productId);
@@ -46,18 +46,17 @@ exports.addToCart = async (req, res) => {
       cart = new Cart({ userId: req.user._id, items: [] });
     }
 
-    // Check if product already in cart
-    const existingItem = cart.items.find(item => 
-      item.productId.toString() === productId
-    );
+    // Check if variant already in cart
+    const existingItem = cart.items.find(item => item.variantId === variantId);
 
     if (existingItem) {
       existingItem.quantity += quantity;
     } else {
       cart.items.push({
         productId,
+        variantId,
         quantity,
-        price: product.price
+        price
       });
     }
 
@@ -69,7 +68,7 @@ exports.addToCart = async (req, res) => {
 
     res.status(200).json({
       items: updatedCart.items.map(item => ({
-        productId: item.productId._id,
+        variantId: item.variantId,
         quantity: item.quantity,
         product: {
           _id: item.productId._id,
@@ -88,16 +87,14 @@ exports.addToCart = async (req, res) => {
 // Remove item from cart
 exports.removeFromCart = async (req, res) => {
   try {
-    const { productId } = req.params;
+    const { variantId } = req.params;
 
     const cart = await Cart.findOne({ userId: req.user._id });
     if (!cart) {
       return res.status(404).json({ message: 'Cart not found' });
     }
 
-    cart.items = cart.items.filter(item => 
-      item.productId.toString() !== productId
-    );
+    cart.items = cart.items.filter(item => item.variantId !== variantId);
 
     await cart.save();
 
@@ -106,7 +103,7 @@ exports.removeFromCart = async (req, res) => {
 
     res.status(200).json({
       items: updatedCart.items.map(item => ({
-        productId: item.productId._id,
+        variantId: item.variantId,
         quantity: item.quantity,
         product: {
           _id: item.productId._id,
@@ -125,7 +122,7 @@ exports.removeFromCart = async (req, res) => {
 // Update item quantity
 exports.updateCartItem = async (req, res) => {
   try {
-    const { productId } = req.params;
+    const { variantId } = req.params;
     const { quantity } = req.body;
 
     const cart = await Cart.findOne({ userId: req.user._id });
@@ -133,9 +130,7 @@ exports.updateCartItem = async (req, res) => {
       return res.status(404).json({ message: 'Cart not found' });
     }
 
-    const item = cart.items.find(item => 
-      item.productId.toString() === productId
-    );
+    const item = cart.items.find(item => item.variantId === variantId);
 
     if (!item) {
       return res.status(404).json({ message: 'Item not found in cart' });
@@ -149,7 +144,7 @@ exports.updateCartItem = async (req, res) => {
 
     res.status(200).json({
       items: updatedCart.items.map(item => ({
-        productId: item.productId._id,
+        variantId: item.variantId,
         quantity: item.quantity,
         product: {
           _id: item.productId._id,

@@ -32,13 +32,9 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
   useEffect(() => {
-    console.log("🔍 Fetching categories...");
-    console.log("🌐 API URL:", `${API_BASE_URL}/api/categories`);
-    
     axios
       .get(`${API_BASE_URL}/api/categories`)
       .then((response) => {
-        console.log("✅ Categories fetched successfully:", response.data);
         setCategories(response.data);
       })
       .catch((error) => {

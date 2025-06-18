@@ -148,6 +148,10 @@ const Contact = () => {
             </li>
           </ul>
         </div>
+
+        <div className="mt-8 text-center text-blue-700 text-sm">
+          For any questions about your order, payment, or refunds, please contact us using this form or email us directly.
+        </div>
       </div>
     </DashboardLayout>
   );
