@@ -10,7 +10,6 @@ import { addToGuestCart } from '../redux/slices/cartSlice';
 import ReviewForm from '../components/product/ReviewForm';
 import ProductReviews from '../components/product/ProductReviews';
 import RelatedProducts from '../components/product/RelatedProducts';
-import { useCurrency } from '../context/currencyContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -20,7 +19,6 @@ const SingleProduct = () => {
   const dispatch = useDispatch();
   const { user } = useAuth();
   const { isGuest } = useSelector(state => state.cart);
-  const { formatPrice, loading: currencyLoading } = useCurrency();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -166,16 +164,12 @@ const SingleProduct = () => {
             <div className="text-lg text-gray-700 mb-4">{product.description}</div>
             <div className="mb-4 flex items-center gap-4">
               <span className="text-3xl font-bold text-blue-600">
-                {currencyLoading
-                  ? '...'
-                  : formatPrice(
-                      parseFloat(
-                        selectedVariant?.price?.amount ||
-                        (product.variants && product.variants[0]?.price?.amount) ||
-                        product.price ||
-                        0
-                      )
-                    )}
+                {`$${parseFloat(
+                  selectedVariant?.price?.amount ||
+                  (product.variants && product.variants[0]?.price?.amount) ||
+                  product.price ||
+                  0
+                ).toFixed(2)} USD`}
               </span>
               <span className={`text-base font-semibold ${selectedVariant?.availableForSale ? 'text-green-600' : 'text-red-600'}`}>
                 {selectedVariant?.availableForSale ? 'In Stock' : 'Out of Stock'}
