@@ -86,6 +86,11 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             name: "Cart",
             path: "/cart",
             icon: <FaShoppingCart className="text-xl" />,
+          },
+          {
+            name: "Track Order",
+            path: "/track-order",
+            icon: <FaBox className="text-xl" />,
           }
         ],
       },

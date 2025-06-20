@@ -15,7 +15,10 @@ const ShippingPolicy = () => (
       <section className="mb-6">
         <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">2. Delivery Times</h2>
         <p>
-          Estimated delivery times are provided at checkout. Most orders are delivered within 3-10 business days. Delays may occur due to carrier issues, holidays, or customs.
+          Estimated delivery times are provided at checkout. Most orders are delivered within <strong>15–21 business days</strong> (standard for products shipped from our suppliers, including Supdropshipping). Delays may occur due to carrier issues, holidays, customs, or other unforeseen circumstances.
+        </p>
+        <p className="mt-2 text-sm text-blue-700">
+          <strong>Note:</strong> All prices are shown in your local currency. Payments for Indian customers are processed in INR. Currency conversion is applied automatically at checkout.
         </p>
       </section>
       <section className="mb-6">

@@ -17,6 +17,7 @@ exports.authMiddleware = (req, res, next) => {
     req.user = {
       _id: decoded._id,
       role: decoded.role,
+      email: decoded.email
     };
 
     next();
@@ -38,6 +39,7 @@ exports.optionalAuthMiddleware = (req, res, next) => {
       req.user = {
         _id: decoded._id,
         role: decoded.role,
+        email: decoded.email
       };
     } catch (error) {
       console.log("⚠️ Optional token invalid or expired:", error.message);

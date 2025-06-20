@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/dashboard/dashboardLayout';
 import { FaBox, FaSpinner } from 'react-icons/fa';
+import axios from 'axios';
+import { useCurrency } from '../context/currencyContext';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -89,24 +91,33 @@ const AddressDisplay = ({ address }) => {
 const OrderItem = ({ item, index, orderId }) => {
   if (!item?.product) return null;
 
+  const { formatPrice } = useCurrency();
+
   return (
     <div key={`${orderId}-${item.productId}-${index}`} className="flex items-center py-2">
       <div className="flex-1">
         <h4 className="font-medium">{item.product.title || 'Unnamed Product'}</h4>
         <p className="text-gray-600">
-          Quantity: {item.quantity || 0} × ${item.product.price || 0}
+          Quantity: {item.quantity || 0} × {formatPrice(item.product.price || 0)}
         </p>
       </div>
       <p className="font-medium">
-        ${((item.quantity || 0) * (item.product.price || 0)).toFixed(2)}
+        {formatPrice((item.quantity || 0) * (item.product.price || 0))}
       </p>
     </div>
   );
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const GuestOrders = () => {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState(null);
+  const [trackOrderNumber, setTrackOrderNumber] = useState('');
+  const [trackedOrder, setTrackedOrder] = useState(null);
+  const [trackingError, setTrackingError] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     const loadOrders = () => {
@@ -141,6 +152,21 @@ const GuestOrders = () => {
     }
   };
 
+  const handleTrackOrder = async (e) => {
+    e.preventDefault();
+    setTrackingError(null);
+    setTrackedOrder(null);
+    setTrackingLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/orders/shopify-orders/track/${encodeURIComponent(trackOrderNumber)}`);
+      setTrackedOrder(response.data.order);
+    } catch (err) {
+      setTrackingError('Order not found. Please check your order number.');
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
   if (error) {
     return (
       <DashboardLayout>
@@ -169,6 +195,69 @@ const GuestOrders = () => {
             <p className="text-gray-600 mt-2">
               Track your orders placed as a guest. Create an account to access more features and save your order history.
             </p>
+          </div>
+
+          {/* Public Order Tracking Form */}
+          <div className="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold mb-2">Track Your Order</h2>
+            <form onSubmit={handleTrackOrder} className="flex flex-col sm:flex-row gap-4 items-center">
+              <input
+                type="text"
+                placeholder="Enter your order number"
+                value={trackOrderNumber}
+                onChange={e => setTrackOrderNumber(e.target.value)}
+                className="border rounded px-4 py-2 flex-1"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+                disabled={trackingLoading}
+              >
+                {trackingLoading ? 'Tracking...' : 'Track Order'}
+              </button>
+            </form>
+            {trackingError && <div className="text-red-500 mt-2">{trackingError}</div>}
+            {trackedOrder && (
+              <div className="mt-6 border-t pt-4">
+                <h3 className="text-lg font-semibold mb-2">Order #{trackedOrder.order_number || trackedOrder.id}</h3>
+                <p className="text-gray-600 mb-2">Placed on {new Date(trackedOrder.created_at).toLocaleDateString()}</p>
+                <div className="mb-2">
+                  <span className="font-medium">Status:</span> {trackedOrder.fulfillment_status || trackedOrder.financial_status || 'N/A'}
+                </div>
+                <div className="mb-2">
+                  <span className="font-medium">Total:</span> {formatPrice(trackedOrder.total_price)}
+                </div>
+                {trackedOrder.line_items && trackedOrder.line_items.length > 0 && (
+                  <div className="mb-2">
+                    <span className="font-medium">Items:</span>
+                    <ul className="list-disc ml-6">
+                      {trackedOrder.line_items.map((item, idx) => (
+                        <li key={idx}>{item.title} x {item.quantity}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {trackedOrder.fulfillments && trackedOrder.fulfillments.length > 0 && (
+                  <div className="mt-2">
+                    <span className="font-medium">Tracking:</span>
+                    {trackedOrder.fulfillments.map((fulfillment, idx) => (
+                      <div key={idx} className="mb-1">
+                        {fulfillment.tracking_number && (
+                          <>
+                            <span>Tracking Number: {fulfillment.tracking_number}</span>
+                            {fulfillment.tracking_url && (
+                              <a href={fulfillment.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-2">Track Package</a>
+                            )}
+                          </>
+                        )}
+                        <div className="text-sm text-gray-600">Status: {fulfillment.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {orders.length === 0 ? (
@@ -217,7 +306,7 @@ const GuestOrders = () => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total</span>
                       <span className="text-xl font-bold text-blue-600">
-                        ${(order.total || 0).toFixed(2)}
+                        {formatPrice((order.total || 0).toFixed(2))}
                       </span>
                     </div>
 
@@ -241,6 +330,10 @@ const GuestOrders = () => {
             >
               Create an Account →
             </Link>
+          </div>
+
+          <div className="text-center text-sm text-blue-700 mt-8">
+            <strong>Estimated delivery:</strong> 15–21 business days. All prices are shown in your local currency. For Indian customers, payments are processed in INR with automatic currency conversion.
           </div>
         </div>
       </ErrorBoundary>

@@ -7,6 +7,7 @@ import { removeFromGuestCart, updateGuestCartItemQuantity, createShopifyCheckout
 import { useAuth } from '../../context/authContext';
 import { showNotification } from '../../utils/notification';
 import LoginGuestModal from '../checkout/LoginGuestModal';
+import { useCurrency } from '../../context/currencyContext';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Cart = () => {
   const { user } = useAuth();
   const { items, total, isGuest } = useSelector((state) => state.cart);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const { formatPrice } = useCurrency();
 
   // Defensive price calculation
   const getItemPrice = (item) => parseFloat(item.product.price || item.product.variantPrice || 0);
@@ -91,7 +93,7 @@ const Cart = () => {
                         />
                         <div className="ml-4">
                           <h3 className="font-medium">{item.product.title}</h3>
-                          <p className="text-gray-600">${getItemPrice(item).toFixed(2)}</p>
+                          <p className="text-gray-600">{formatPrice(getItemPrice(item))}</p>
                         </div>
                       </div>
 
@@ -132,7 +134,7 @@ const Cart = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
@@ -142,7 +144,7 @@ const Cart = () => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total</span>
                       <span className="text-xl font-bold text-blue-600">
-                        ${subtotal.toFixed(2)}
+                        {formatPrice(subtotal)}
                       </span>
                     </div>
                   </div>
@@ -184,6 +186,10 @@ const Cart = () => {
             }
           }}
         />
+
+        <div className="text-center text-sm text-blue-700 mt-8">
+          <strong>Estimated delivery:</strong> 15–21 business days. All prices are shown in your local currency. For Indian customers, payments are processed in INR with automatic currency conversion.
+        </div>
       </div>
     </DashboardLayout>
   );

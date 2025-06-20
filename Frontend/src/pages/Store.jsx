@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import DashboardLayout from '../components/dashboard/dashboardLayout';
 import { useAuth } from '../context/authContext';
+import { useCurrency } from '../context/currencyContext';
 import { 
   addToGuestCart, 
   initializeCart,
@@ -27,6 +28,7 @@ const Store = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [wishlist, setWishlist] = useState([]);
+  const { formatPrice } = useCurrency();
 
   const searchParams = new URLSearchParams(location.search);
   const [filters, setFilters] = useState({
@@ -135,6 +137,7 @@ const Store = () => {
               wishlist={wishlist}
               onToggleWishlist={toggleWishlist}
               onAddToCart={handleAddToCart}
+              formatPrice={formatPrice}
             />
           </div>
         </div>

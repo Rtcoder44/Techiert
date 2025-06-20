@@ -6,7 +6,9 @@ const {
   getOrders,
   getOrderById,
   createGuestOrder,
-  getGuestOrderByNumber
+  getGuestOrderByNumber,
+  getShopifyOrders,
+  getShopifyOrderByNumber
 } = require('../controllers/order.controller');
 
 // Routes for authenticated users
@@ -17,5 +19,9 @@ router.get('/orders/:id', authMiddleware, getOrderById);
 // Routes for guest users
 router.post('/guest-orders', createGuestOrder);
 router.get('/guest-orders/:orderNumber', getGuestOrderByNumber);
+
+// Shopify order routes
+router.get('/shopify-orders', authMiddleware, getShopifyOrders);
+router.get('/shopify-orders/track/:orderNumber', getShopifyOrderByNumber);
 
 module.exports = router; 

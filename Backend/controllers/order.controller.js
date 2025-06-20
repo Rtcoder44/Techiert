@@ -1,6 +1,7 @@
 const Order = require('../models/order.model');
 const Cart = require('../models/cart.model');
 const Product = require('../models/product.model');
+const shopifyService = require('../services/shopify.service');
 
 // Create order for authenticated user
 exports.createOrder = async (req, res) => {
@@ -230,5 +231,33 @@ exports.getGuestOrderByNumber = async (req, res) => {
       message: 'Error fetching guest order',
       error: error.message
     });
+  }
+};
+
+// Fetch Shopify orders by user email
+exports.getShopifyOrders = async (req, res) => {
+  try {
+    const email = req.user?.email;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'User email not found.' });
+    }
+    const orders = await shopifyService.fetchOrdersByEmail(email);
+    res.status(200).json({ success: true, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Fetch a single Shopify order by order number
+exports.getShopifyOrderByNumber = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const order = await shopifyService.fetchOrderByNumber(orderNumber);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    res.status(200).json({ success: true, order });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 }; 

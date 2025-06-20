@@ -9,13 +9,15 @@ const RefundPolicy = () => (
       <section className="mb-6">
         <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">1. Returns</h2>
         <p>
-          If you are not satisfied with your purchase, you may request a return within 7 days of delivery. Products must be unused, in original packaging, and in resalable condition. Some items (e.g., digital goods, perishable items) may not be eligible for return.
+          If you are not satisfied with your purchase, you may request a return within 7 days of delivery. Products must be unused, in original packaging, and in resalable condition. Some items (e.g., digital goods, perishable items) may not be eligible for return.<br/>
+          <strong>Note:</strong> Most orders are delivered within 15–21 business days. Please allow for this delivery window before requesting a return or refund.
         </p>
       </section>
       <section className="mb-6">
         <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">2. Refunds</h2>
         <p>
-          Once your return is received and inspected, we will notify you of the approval or rejection of your refund. If approved, your refund will be processed to your original payment method within 5-10 business days. Refunds are subject to Shopify and payment gateway processing times.
+          Once your return is received and inspected, we will notify you of the approval or rejection of your refund. If approved, your refund will be processed to your original payment method within 5-10 business days. Refunds are subject to Shopify, Razorpay, and payment gateway processing times.<br/>
+          <strong>All prices are shown in your local currency. For Indian customers, payments are processed in INR. Currency conversion is applied automatically at checkout.</strong>
         </p>
       </section>
       <section className="mb-6">

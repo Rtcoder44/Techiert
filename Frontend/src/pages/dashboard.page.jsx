@@ -97,6 +97,13 @@ const Dashboard = () => {
         description: "Track your orders",
         link: "/my-orders",
         linkText: "View Orders"
+      },
+      {
+        title: "Track Order",
+        icon: <FaBox className="text-4xl text-orange-500" />,
+        description: "Track your order by order number",
+        link: "/track-order",
+        linkText: "Track Order"
       }
     ];
 

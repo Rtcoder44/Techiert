@@ -110,13 +110,14 @@ const TermsOfService = () => {
         <section className="mb-6">
           <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">10. Orders & Payments</h2>
           <p>
-            By placing an order on Techiert.com, you agree to provide accurate and complete information. Payments are processed securely via third-party payment gateways (such as Shopify Payments, Stripe, PayPal, UPI, etc.). We do not store your payment card details. All transactions are subject to verification and approval by the payment processor.
+            By placing an order on Techiert.com, you agree to provide accurate and complete information. Payments are processed securely via third-party payment gateways (such as Shopify Payments, Stripe, PayPal, UPI, Razorpay, etc.). We do not store your payment card details. All transactions are subject to verification and approval by the payment processor.<br/>
+            <strong>All prices are shown in your local currency. For Indian customers, payments are processed in INR. Currency conversion is applied automatically at checkout.</strong>
           </p>
         </section>
         <section className="mb-6">
           <h2 className="text-xl font-semibold mb-2 text-[#1E293B]">11. Shipping & Delivery</h2>
           <p>
-            Shipping times and delivery estimates are provided at checkout. We are not responsible for delays caused by carriers or customs. Please review our <a href="/shipping-policy" className="text-blue-600 hover:underline">Shipping Policy</a> for details.
+            Shipping times and delivery estimates are provided at checkout. <strong>Most orders are delivered within 15–21 business days</strong> (standard for products shipped from our suppliers, including Supdropshipping). We are not responsible for delays caused by carriers, customs, or other unforeseen circumstances. Please review our <a href="/shipping-policy" className="text-blue-600 hover:underline">Shipping Policy</a> for details.
           </p>
         </section>
         <section className="mb-6">

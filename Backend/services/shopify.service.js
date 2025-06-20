@@ -1,4 +1,5 @@
 const { Shopify } = require('@shopify/shopify-api');
+const axios = require('axios');
 
 class ShopifyService {
   constructor() {
@@ -329,6 +330,42 @@ class ShopifyService {
         availableForSale: edge.node.availableForSale
       }))
     };
+  }
+
+  async fetchOrdersByEmail(email) {
+    const shop = process.env.SHOPIFY_SHOP_NAME;
+    const accessToken = process.env.SHOPIFY_ADMIN_API_TOKEN;
+    const url = `https://${shop}.myshopify.com/admin/api/2023-10/orders.json?email=${encodeURIComponent(email)}&status=any`;
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data.orders;
+    } catch (error) {
+      console.error('Error fetching orders from Shopify:', error.response?.data || error.message);
+      throw new Error('Failed to fetch orders from Shopify');
+    }
+  }
+
+  async fetchOrderByNumber(orderNumber) {
+    const shop = process.env.SHOPIFY_SHOP_NAME;
+    const accessToken = process.env.SHOPIFY_ADMIN_API_TOKEN;
+    const url = `https://${shop}.myshopify.com/admin/api/2023-10/orders.json?name=${encodeURIComponent(orderNumber)}&status=any`;
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data.orders && response.data.orders.length > 0 ? response.data.orders[0] : null;
+    } catch (error) {
+      console.error('Error fetching order by number from Shopify:', error.response?.data || error.message);
+      throw new Error('Failed to fetch order from Shopify');
+    }
   }
 }
 

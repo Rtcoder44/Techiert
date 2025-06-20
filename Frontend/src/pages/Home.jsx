@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { FaShoppingBag, FaBlog, FaArrowRight, FaTag } from 'react-icons/fa';
+import { useCurrency } from '../context/currencyContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,6 +11,7 @@ const Home = () => {
   const [featuredPosts, setFeaturedPosts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,13 +31,6 @@ const Home = () => {
 
     fetchData();
   }, []);
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -186,6 +181,11 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Add delivery/currency note at the bottom of the main div */}
+      <div className="text-center text-sm text-blue-700 mt-8">
+        <strong>Estimated delivery:</strong> 15–21 business days. All prices are shown in your local currency. For Indian customers, payments are processed in INR with automatic currency conversion.
+      </div>
     </div>
   );
 };

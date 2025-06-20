@@ -148,7 +148,8 @@ const About = () => {
         </motion.div>
 
         <div className="mt-16 text-center text-gray-500 text-sm">
-          <strong>Shop with Confidence:</strong> All payments on Techiert.com are processed securely via trusted payment gateways. Your privacy and security are our top priorities.
+          <strong>Shop with Confidence:</strong> All payments on Techiert.com are processed securely via trusted payment gateways. Your privacy and security are our top priorities.<br/>
+          <strong>Estimated delivery time for most products is 15–21 business days. All prices are shown in your local currency. For Indian customers, payments are processed in INR with automatic currency conversion.</strong>
         </div>
       </div>
     </DashboardLayout>

@@ -113,6 +113,7 @@ const AppContent = () => {
           <Route path="/store/product/:handle" element={<SingleProduct />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/guest-orders" element={<GuestOrders />} />
+          <Route path="/track-order" element={<GuestOrders />} />
 
           {/* Dashboard Routes */}
           <Route
