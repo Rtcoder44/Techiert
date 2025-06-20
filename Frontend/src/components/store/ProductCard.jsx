@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaStar, FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
+import { useCurrency } from '../context/currencyContext';
 
 const ProductCard = ({ product, isWishlisted, onToggleWishlist, onAddToCart, isFeatured = false }) => {
   const [selectedVariant, setSelectedVariant] = useState(product.variants && product.variants.length > 0 ? product.variants[0] : null);
+  const { formatPrice } = useCurrency();
+
+  const priceToFormat = selectedVariant ? selectedVariant.price.amount : product.price;
 
   return (
     <motion.div
@@ -71,7 +75,7 @@ const ProductCard = ({ product, isWishlisted, onToggleWishlist, onAddToCart, isF
         )}
         <div className="flex justify-between items-center">
           <span className="text-xl font-bold text-gray-900">
-            {`$${(selectedVariant ? Number(selectedVariant.price.amount) : Number(product.price)).toFixed(2)} USD`}
+            {formatPrice(priceToFormat)}
           </span>
           <button
             onClick={() => onAddToCart(product, selectedVariant)}
