@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaStar, FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
-import { useCurrency } from '../context/currencyContext';
+import { useCurrency } from '../../context/currencyContext';
 
 const ProductCard = ({ product, isWishlisted, onToggleWishlist, onAddToCart, isFeatured = false }) => {
   const [selectedVariant, setSelectedVariant] = useState(product.variants && product.variants.length > 0 ? product.variants[0] : null);
