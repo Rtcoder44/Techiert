@@ -55,9 +55,8 @@ exports.signup = async (req, res) => {
     // Ensure a default avatar if not uploaded
     const avatarUrl = req.file ? req.file.path : "https://via.placeholder.com/200";
 
-    // Create new user and hash the password
+    // Create new user and set the password (let pre-save hook hash it)
     user = new User({ name, email, password, avatar: avatarUrl });
-    user.password = await bcrypt.hash(password, 10); // Hash password
 
     // Save the user to the database
     await user.save();
@@ -103,25 +102,11 @@ exports.login = async (req, res) => {
   try {
     console.log("🔍 Login attempt:", { email });
 
-    // Check if the user is cached in Redis
-    const cachedUser = await getCache(`user:${email.toLowerCase()}`);
-    let user;
-
-    if (cachedUser) {
-      console.log("✅ User found in Redis cache.");
-      user = cachedUser;
-    } else {
-      console.log("❌ User not found in Redis cache, querying database.");
-      // User not found in Redis, fetch from DB
-      user = await User.findOne({ email }).select("+password");
-      
-      if (!user) {
-        console.log("❌ Invalid email");
-        return res.status(401).json({ error: "Invalid email or password" });
-      }
-
-      // Cache the user data in Redis for future login attempts
-      await setCache(`user:${email.toLowerCase()}`, user, 3600); // Cache for 1 hour
+    // Always fetch the user from the database for login
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      console.log("❌ Invalid email");
+      return res.status(401).json({ error: "Invalid email or password" });
     }
 
     // Compare the password if the user is found
@@ -386,6 +371,9 @@ exports.changePassword = async (req, res) => {
     user.password = newPassword; // Will be hashed by pre-save middleware
     await user.save();
 
+    // Clear Redis cache for this user so login uses the updated password
+    await delCache(`user:${user.email.toLowerCase()}`);
+
     res.status(200).json({ message: "Password changed successfully." });
   } catch (err) {
     console.error("Change password error:", err);
@@ -505,11 +493,14 @@ exports.forgotPassword = async (req, res) => {
     if (!user)
       return res.status(400).json({ error: "Invalid or expired token" });
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = newPassword; // Let the pre-save hook hash it
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
     await user.save();
+
+    // Clear Redis cache for this user so login uses the updated password
+    await delCache(`user:${user.email.toLowerCase()}`);
 
     // Optional: Send confirmation email
     const transporter = nodemailer.createTransport({
