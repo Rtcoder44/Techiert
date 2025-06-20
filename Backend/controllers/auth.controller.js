@@ -443,7 +443,7 @@ exports.forgotPassword = async (req, res) => {
 
     // Choose frontend URL based on environment
     const frontendUrl = process.env.NODE_ENV === "production"
-      ? "https://techiert.vercel.app"
+      ? process.env.FRONTEND_URL
       : process.env.CLIENT_URL;
 
     const resetUrl = `${frontendUrl}/reset-password/${rawToken}`;
