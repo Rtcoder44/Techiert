@@ -1,7 +1,0 @@
-User-agent: *
-Disallow: /api/
-Disallow: /admin/
-Disallow: /login/
-Disallow: /register/
-
-Sitemap: https://techiert.com/sitemap.xml
