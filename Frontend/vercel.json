@@ -11,6 +11,10 @@
   ],
   "routes": [
     {
+      "src": "/sitemap.xml",
+      "dest": "https://techiert.onrender.com/sitemap.xml"
+    },
+    {
       "src": "/assets/(.*)",
       "dest": "/assets/$1"
     },
