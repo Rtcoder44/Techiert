@@ -20,7 +20,7 @@ const ProductCard = ({ product, isWishlisted, onToggleWishlist, onAddToCart, isF
       <Link to={`/store/product/${product.handle}`} className="block relative">
         <div className="relative pb-[75%]">
           <img
-            src={product.image || '/default-product.jpg'}
+            src={product.images && product.images.length > 0 ? product.images[0] : '/default-product.jpg'}
             alt={product.title}
             className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"

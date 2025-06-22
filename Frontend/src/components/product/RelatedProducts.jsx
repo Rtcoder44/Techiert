@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const RelatedProducts = ({ categoryId, currentProductId }) => {
+const RelatedProducts = ({ productHandle, currentProductId }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,25 +13,24 @@ const RelatedProducts = ({ categoryId, currentProductId }) => {
     const fetchRelatedProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/api/products`, {
+        const response = await axios.get(`${API_BASE_URL}/api/shopify/products/related/${productHandle}`, {
           params: {
-            category: categoryId,
-            exclude: currentProductId,
             limit: 4
           }
         });
-        setProducts(response.data.products);
+        setProducts(response.data.products || []);
       } catch (error) {
         console.error('Error fetching related products:', error);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
     };
 
-    if (categoryId) {
+    if (productHandle) {
       fetchRelatedProducts();
     }
-  }, [categoryId, currentProductId]);
+  }, [productHandle]);
 
   if (loading) {
     return (
@@ -60,15 +59,18 @@ const RelatedProducts = ({ categoryId, currentProductId }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {products.map((product) => (
           <Link
-            key={product._id}
-            to={`/store/product/${product.slug}`}
+            key={product.id}
+            to={`/store/product/${product.handle}`}
             className="group"
           >
             <div className="aspect-w-1 aspect-h-1 w-full rounded-lg overflow-hidden">
               <img
-                src={product.images[0]?.url}
+                src={product.images && product.images.length > 0 ? product.images[0] : '/default-product.jpg'}
                 alt={product.title}
                 className="w-full h-full object-center object-cover group-hover:opacity-75 transition-opacity"
+                onError={(e) => {
+                  e.target.src = '/default-product.jpg';
+                }}
               />
             </div>
             <h3 className="mt-4 text-sm text-gray-700">{product.title}</h3>
@@ -78,19 +80,17 @@ const RelatedProducts = ({ categoryId, currentProductId }) => {
                   <FaStar
                     key={index}
                     className={`h-4 w-4 ${
-                      index < Math.round(product.rating)
-                        ? 'text-yellow-400'
-                        : 'text-gray-300'
+                      index < 4 ? 'text-yellow-400' : 'text-gray-300'
                     }`}
                   />
                 ))}
               </div>
               <span className="ml-2 text-sm text-gray-500">
-                ({product.reviews?.length || 0})
+                (0)
               </span>
             </div>
             <p className="mt-1 text-lg font-medium text-gray-900">
-              ${product.price.toFixed(2)}
+              ${parseFloat(product.price).toFixed(2)}
             </p>
           </Link>
         ))}

@@ -75,4 +75,7 @@ blogSchema.pre("save", function (next) {
     next();
 });
 
+blogSchema.index({ slug: 1 });
+blogSchema.index({ updatedAt: -1 });
+
 module.exports = mongoose.model("Blog", blogSchema);

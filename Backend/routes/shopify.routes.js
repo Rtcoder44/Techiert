@@ -113,6 +113,19 @@ router.get('/products/handle/:handle', async (req, res) => {
   }
 });
 
+// Get related products
+router.get('/products/related/:handle', async (req, res) => {
+  try {
+    const { handle } = req.params;
+    const { limit = 4 } = req.query;
+    const relatedProducts = await shopifyService.fetchRelatedProducts(handle, parseInt(limit));
+    res.json({ success: true, products: relatedProducts });
+  } catch (error) {
+    console.error('Error fetching related products:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Create checkout
 router.post('/checkout', async (req, res) => {
   try {

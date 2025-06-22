@@ -96,126 +96,49 @@ exports.createBlog = async (req, res) => {
 // Get all blogs (Only show public, or private if owner/admin)
 exports.getAllBlogs = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      search = "",
-      category = "",
-      tags = "",
-      status = "all",
-      sort = "latest",
-    } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search || '';
+    const sort = req.query.sort || 'latest';
 
-    // Check for any undefined values
-    const queryParams = { page, limit, search, category, tags, status, sort };
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value === undefined) {
-        console.warn(`⚠️ Query param '${key}' is undefined`);
-      }
-    }
-
-    const safePage = Math.max(1, parseInt(page));
-    const safeLimit = Math.min(50, parseInt(limit));
-    const userId = req.user?._id?.toString() || "guest";
-
-    // 🧠 Build safe cache key (fallback values to avoid "undefined")
-    const cacheKey = [
-      "blogs",
-      userId,
-      safePage,
-      safeLimit,
-      search || "none",
-      category || "all",
-      tags || "all",
-      status,
-      sort,
-    ].join(":");
-
-    // ✅ Try Redis Cache First
-    const cachedData = await getCache(cacheKey);
-    if (cachedData) {
-      return res.status(200).json(cachedData);
-    }
-
+    // Build query
     const query = {};
-
-    // 🔹 Status Filter
-    if (status === "published") {
-      query.status = "published";
-    } else if (status === "draft") {
-      query.status = "draft";
-    } else if (status === "private") {
-      query.status = "private";
-    } else {
-      query.$or = [{ status: "published" }];
-      if (req.user) {
-        query.$or.push(
-          { status: "draft", author: req.user._id },
-          { status: "private", author: req.user._id }
-        );
-      }
-    }
-
-    // 🔹 Search Filter
     if (search) {
-      const searchQuery = {
-        $or: [
-          { title: { $regex: search, $options: "i" } },
-          { content: { $regex: search, $options: "i" } },
-        ],
-      };
-      if (query.$and) {
-        query.$and.push(searchQuery);
-      } else if (Object.keys(query).length > 0) {
-        query.$and = [searchQuery];
-      } else {
-        Object.assign(query, searchQuery);
-      }
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    // 🔹 Category Filter
-    if (category) {
-      query.category = category;
-    }
+    const sortOptions = {
+      latest: { updatedAt: -1 },
+      oldest: { updatedAt: 1 },
+      nameAZ: { title: 1 },
+      nameZA: { title: -1 }
+    };
+    const sortKey = sortOptions[sort] ? sort : 'latest';
 
-    // 🔹 Tags Filter
-    if (tags) {
-      query.tags = { $in: tags.split(",").map(tag => tag.trim()) };
-    }
-
-    // 🔹 Sorting
-    let sortOption = { createdAt: -1 }; // Default: latest
-    if (sort === "oldest") sortOption = { createdAt: 1 };
-    if (sort === "popular") sortOption = { views: -1 };
-
-    const skip = (safePage - 1) * safeLimit;
-
-    // 🔹 Fetch Data
-    const [blogs, totalBlogs] = await Promise.all([
+    const [blogs, total] = await Promise.all([
       Blog.find(query)
-        .populate("author", "name")
-        .populate("category", "name")
-        .populate("tags", "name")
-        .sort(sortOption)
+        .sort(sortOptions[sortKey])
         .skip(skip)
-        .limit(safeLimit),
-      Blog.countDocuments(query),
+        .limit(limit)
+        .select('title slug updatedAt')
+        .lean(),
+      Blog.countDocuments(query)
     ]);
 
-    const response = {
+    res.status(200).json({
+      success: true,
       blogs,
-      totalBlogs,
-      currentPage: safePage,
-      totalPages: Math.ceil(totalBlogs / safeLimit),
-    };
-
-    // 🔹 Cache Result for 60 seconds
-    await setCache(cacheKey, response, 60);
-
-    res.status(200).json(response);
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalBlogs: total
+    });
   } catch (error) {
-    console.error("❌ Error in getAllBlogs:", error);
-    res.status(500).json({ error: "Server error while fetching blogs." });
+    console.error('Error fetching blogs:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 

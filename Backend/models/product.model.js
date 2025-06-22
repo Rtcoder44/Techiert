@@ -94,4 +94,7 @@ productSchema.pre('save', function(next) {
   next();
 });
 
+productSchema.index({ slug: 1 });
+productSchema.index({ updatedAt: -1 });
+
 module.exports = mongoose.model('Product', productSchema);

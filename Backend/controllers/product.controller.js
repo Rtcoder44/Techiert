@@ -155,8 +155,8 @@ exports.getAllProducts = async (req, res) => {
     }
 
     const sortOptions = {
-      latest: { createdAt: -1 },
-      oldest: { createdAt: 1 },
+      latest: { updatedAt: -1 },
+      oldest: { updatedAt: 1 },
       priceHigh: { price: -1 },
       priceLow: { price: 1 },
       nameAZ: { title: 1 },
@@ -171,7 +171,7 @@ exports.getAllProducts = async (req, res) => {
         .sort(sortOptions[sortKey])
         .skip(skip)
         .limit(limit)
-        .populate("category")
+        .select('title slug price images updatedAt')
         .lean(),
       Product.countDocuments(query)
     ]);

@@ -3,17 +3,30 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../context/authContext';
 import axios from 'axios';
-import { FaStar, FaHeart, FaRegHeart, FaShoppingCart, FaTruck, FaShieldAlt, FaUndo } from 'react-icons/fa';
+import { FaTruck, FaShieldAlt, FaUndo } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/dashboard/dashboardLayout';
 import { addToGuestCart } from '../redux/slices/cartSlice';
-import ReviewForm from '../components/product/ReviewForm';
-import ProductReviews from '../components/product/ProductReviews';
 import RelatedProducts from '../components/product/RelatedProducts';
 import { Helmet } from 'react-helmet-async';
 import { useCurrency } from '../context/currencyContext';
+import SocialShareButtons from '../components/SocialShareButtons';
+import AiProductDetails, { AiDetailsSkeleton } from '../components/product/AiProductDetails';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+const TabButton = ({ isActive, onClick, children }) => (
+  <button
+    onClick={onClick}
+    className={`py-4 px-6 font-medium text-lg border-b-4 transition-colors duration-300 ${
+      isActive
+        ? 'border-blue-600 text-blue-600'
+        : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'
+    }`}
+  >
+    {children}
+  </button>
+);
 
 const SingleProduct = () => {
   const { handle } = useParams();
@@ -29,9 +42,9 @@ const SingleProduct = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likes, setLikes] = useState(0);
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [aiContent, setAiContent] = useState('');
+  const [isAiContentLoading, setIsAiContentLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -41,8 +54,24 @@ const SingleProduct = () => {
         const prod = response.data.product;
         setProduct(prod);
         setSelectedVariant(prod.variants && prod.variants.length > 0 ? prod.variants[0] : null);
-        setLikes(prod.likes?.length || 0);
-        setIsLiked(user ? prod.likes?.includes(user._id) : false);
+        
+        // Fetch AI content
+        if (prod.title) {
+          setIsAiContentLoading(true);
+          try {
+            const aiResponse = await axios.post(`${API_BASE_URL}/api/gemini/generate-product-content`, {
+              title: prod.title,
+              description: prod.description,
+            });
+            if (aiResponse.data.success) {
+              setAiContent(aiResponse.data.content);
+            }
+          } catch (error) {
+            console.error('Failed to fetch AI content', error);
+          } finally {
+            setIsAiContentLoading(false);
+          }
+        }
       } catch (err) {
         setError('Failed to load product details');
       } finally {
@@ -61,18 +90,19 @@ const SingleProduct = () => {
     if (!selectedVariant) return;
     const variantId = selectedVariant.id;
     const price = parseFloat(
-      (selectedVariant.price && selectedVariant.price.amount) ||
+      selectedVariant.price ||
       product.price ||
       0
     );
-    const images = product.images || (product.image ? [product.image] : []);
+    const images = product.images || [];
     const cartPayload = {
       variantId,
       product: {
         title: product.title,
         price,
         images,
-        shopifyVariantId: variantId
+        shopifyVariantId: variantId,
+        handle: product.handle
       },
       quantity
     };
@@ -86,25 +116,6 @@ const SingleProduct = () => {
   const handleBuyNow = () => {
     handleAddToCart();
     navigate('/cart');
-  };
-
-  const handleLikeToggle = async () => {
-    if (!user) {
-      navigate('/login?redirect=' + encodeURIComponent(window.location.pathname));
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/products/${product.slug}/like`,
-        {},
-        { withCredentials: true }
-      );
-      setIsLiked(response.data.liked);
-      setLikes(response.data.likes);
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
   };
 
   if (loading) {
@@ -136,8 +147,8 @@ const SingleProduct = () => {
   }
 
   const price = parseFloat(
-    selectedVariant?.price?.amount ||
-    (product.variants && product.variants[0]?.price?.amount) ||
+    selectedVariant?.price ||
+    (product.variants && product.variants[0]?.price) ||
     product.price ||
     0
   );
@@ -163,36 +174,42 @@ const SingleProduct = () => {
       </Helmet>
       <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             {/* Image Gallery */}
             <div>
-              <div className="border-4 border-blue-200 rounded-lg overflow-hidden mb-4">
+              <div className="border-4 border-blue-200 rounded-lg overflow-hidden mb-4 relative group">
                 <img
-                  src={product.images[selectedImage] || '/default-product.jpg'}
+                  src={product.images && product.images.length > 0 ? product.images[selectedImage] : '/default-product.jpg'}
                   alt={product.title}
-                  className="w-full h-auto object-contain bg-white"
+                  className="w-full h-auto object-contain bg-white transition-transform duration-300 ease-in-out group-hover:scale-125"
                   style={{ maxHeight: 400 }}
+                  onError={(e) => {
+                    e.target.src = '/default-product.jpg';
+                  }}
                 />
               </div>
-              <div className="flex gap-2 flex-wrap">
-                {product.images.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img}
-                    alt={`Thumbnail ${idx + 1}`}
-                    className={`w-20 h-20 object-cover rounded cursor-pointer border-2 ${selectedImage === idx ? 'border-blue-500' : 'border-gray-200'}`}
-                    onClick={() => setSelectedImage(idx)}
-                  />
-                ))}
-              </div>
+              {product.images && product.images.length > 1 && (
+                <div className="flex gap-2 flex-wrap">
+                  {product.images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`${product.title} - Image ${idx + 1}`}
+                      className={`w-20 h-20 object-cover rounded cursor-pointer border-2 ${selectedImage === idx ? 'border-blue-500' : 'border-gray-200'}`}
+                      onClick={() => setSelectedImage(idx)}
+                      onError={(e) => {
+                        e.target.src = '/default-product.jpg';
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Product Info */}
             <div>
-              <h1 className="text-3xl font-bold mb-2 text-gray-900">{product.title}</h1>
-              <div className="text-lg text-gray-700 mb-4">{product.description}</div>
-
-              <div className="mb-2 flex items-center gap-4">
+              <h1 className="text-3xl lg:text-4xl font-bold mb-2 text-gray-900">{product.title}</h1>
+              <div className="mb-4 flex items-center gap-4">
                 <span className="text-3xl font-bold text-blue-600">
                   {formatPrice(price)}
                 </span>
@@ -276,40 +293,48 @@ const SingleProduct = () => {
                 </button>
               </div>
 
-              {/* Product Tags */}
-              {product.tags && product.tags.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="font-semibold mb-2">Features:</h3>
-                  <div className="flex gap-2 flex-wrap">
-                    {product.tags.map((tag) => (
-                      <span key={tag} className="px-3 py-1 bg-gray-200 rounded-full text-sm">{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <SocialShareButtons
+                url={window.location.href}
+                title={product.title}
+                imageUrl={product.images && product.images.length > 0 ? product.images[0] : ''}
+              />
             </div>
           </div>
-
-          {/* Product Details Tabs */}
-          {product.specifications && Object.keys(product.specifications).length > 0 && (
-            <div className="mt-16">
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
-                  <button className="border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Product Details
-                  </button>
-                </nav>
-              </div>
-
-              <div className="py-8">
-                <div className="prose max-w-none">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
+          
+          {/* Details Tabs */}
+          <div className="mt-16">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <TabButton isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
+                  Product Overview
+                </TabButton>
+                <TabButton isActive={activeTab === 'details'} onClick={() => setActiveTab('details')}>
+                  Full Details
+                </TabButton>
+                {product.specifications && Object.keys(product.specifications).length > 0 && (
+                   <TabButton isActive={activeTab === 'specs'} onClick={() => setActiveTab('specs')}>
                     Specifications
-                  </h3>
-                  <div className="mt-4 border rounded-lg overflow-hidden">
+                  </TabButton>
+                )}
+              </nav>
+            </div>
+
+            <div className="py-8">
+              {activeTab === 'overview' && (
+                isAiContentLoading ? <AiDetailsSkeleton /> : (
+                  aiContent ? <AiProductDetails content={aiContent} /> : <p>No overview available.</p>
+                )
+              )}
+
+              {activeTab === 'details' && (
+                <div className="prose prose-lg max-w-none">
+                  <p>{product.description}</p>
+                </div>
+              )}
+
+              {activeTab === 'specs' && product.specifications && Object.keys(product.specifications).length > 0 && (
+                <div className="prose max-w-none">
+                   <div className="mt-4 border rounded-lg overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
                       <tbody className="bg-white divide-y divide-gray-200">
                         {Object.entries(product.specifications || {}).map(([key, value], index) => (
@@ -332,46 +357,26 @@ const SingleProduct = () => {
                     </table>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
-
-          {/* Reviews Section */}
-          {product._id && (
-            <div className="mt-16">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">Customer Reviews</h2>
-                {user && !showReviewForm && (
-                  <button
-                    onClick={() => setShowReviewForm(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Write a Review
-                  </button>
-                )}
+          </div>
+          
+          {/* Product Tags */}
+          {product.tags && product.tags.length > 0 && (
+            <div className="mt-8">
+              <h3 className="font-semibold text-lg mb-3">Product Tags:</h3>
+              <div className="flex gap-3 flex-wrap">
+                {product.tags.map((tag) => (
+                  <span key={tag} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-full text-sm font-medium shadow-sm">{tag}</span>
+                ))}
               </div>
-
-              <AnimatePresence>
-                {showReviewForm && (
-                  <ReviewForm
-                    productId={product._id}
-                    onClose={() => setShowReviewForm(false)}
-                    onSubmitSuccess={() => {
-                      setShowReviewForm(false);
-                      window.location.reload();
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-
-              <ProductReviews productId={product._id} />
             </div>
           )}
 
           {/* Related Products */}
           <RelatedProducts
-            categoryId={product.category?._id}
-            currentProductId={product._id}
+            productHandle={product.handle}
+            currentProductId={product.id}
           />
         </div>
       </DashboardLayout>

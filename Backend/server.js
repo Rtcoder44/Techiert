@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const compression = require('compression');
 require("dotenv").config();
 
 
@@ -13,6 +14,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+app.use(compression());
 
 // Allowed CORS origins
 const allowedOrigins = [
@@ -51,6 +53,8 @@ const cartRoutes = require("./routes/cart.routes");
 const addressRoutes = require("./routes/address.routes");
 const orderRoutes = require("./routes/order.routes");
 const shopifyRoutes = require('./routes/shopify.routes');
+const geminiRoutes = require('./routes/gemini.routes');
+const sitemapRoutes = require('./routes/sitemap.routes');
 
 // Apply Routes
 app.use("/api/auth", authRoute);
@@ -64,6 +68,8 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/orders", orderRoutes);
 app.use('/api/shopify', shopifyRoutes);
+app.use('/api/gemini', geminiRoutes);
+app.use('/', sitemapRoutes);
 
 // MongoDB Connection
 mongoose
@@ -86,3 +92,8 @@ app.get("/health", (req, res) => {
 // Start Server
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`🚀 Server is running on port ${port}`));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  // ... existing code ...
+});

@@ -87,7 +87,7 @@ const Cart = () => {
                     >
                       <div className="flex items-center flex-1">
                         <img
-                          src={item.product.images[0]?.url || '/default-product.jpg'}
+                          src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/default-product.jpg'}
                           alt={item.product.title}
                           className="w-20 h-20 object-cover rounded"
                         />

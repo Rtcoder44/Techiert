@@ -130,7 +130,7 @@ class ShopifyService {
         title: edge.node.title,
         description: edge.node.description,
         price: edge.node.priceRange.minVariantPrice.amount,
-        image: edge.node.images.edges[0]?.node.url,
+        images: edge.node.images.edges.map(img => img.node.url),
         tags: edge.node.tags,
         variantId: edge.node.variants.edges[0]?.node.id,
         variantPrice: edge.node.variants.edges[0]?.node.price.amount
@@ -365,6 +365,101 @@ class ShopifyService {
     } catch (error) {
       console.error('Error fetching order by number from Shopify:', error.response?.data || error.message);
       throw new Error('Failed to fetch order from Shopify');
+    }
+  }
+
+  async fetchRelatedProducts(currentHandle, limit = 4) {
+    try {
+      const client = await this.initialize();
+      
+      // First, get the current product to extract tags
+      const currentProduct = await this.fetchProductByHandle(currentHandle);
+      if (!currentProduct || !currentProduct.tags || currentProduct.tags.length === 0) {
+        // If no tags, fetch some recent products
+        const recentProducts = await this.fetchProducts({ limit: limit + 1 });
+        return recentProducts.filter(product => product.handle !== currentHandle).slice(0, limit);
+      }
+
+      // Use the first few tags to find related products
+      const searchTags = currentProduct.tags.slice(0, 2).join(' ');
+      const query = `
+        query($first: Int!, $query: String!) {
+          products(first: $first, query: $query) {
+            edges {
+              node {
+                id
+                handle
+                title
+                description
+                priceRange { 
+                  minVariantPrice { 
+                    amount 
+                  } 
+                }
+                images(first: 1) { 
+                  edges { 
+                    node { 
+                      url 
+                    } 
+                  } 
+                }
+                tags
+                variants(first: 1) { 
+                  edges { 
+                    node { 
+                      id 
+                      price { 
+                        amount 
+                      } 
+                      availableForSale
+                    } 
+                  } 
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        first: limit + 1, // Get one extra to account for the current product
+        query: `tag:${searchTags}`
+      };
+
+      const response = await client.request(query, variables);
+      
+      if (!response.products || !response.products.edges) {
+        return [];
+      }
+
+      // Filter out the current product and map the results
+      const products = response.products.edges
+        .map(edge => ({
+          id: edge.node.id,
+          handle: edge.node.handle,
+          title: edge.node.title,
+          description: edge.node.description,
+          price: edge.node.priceRange.minVariantPrice.amount,
+          images: edge.node.images.edges.map(img => img.node.url),
+          tags: edge.node.tags,
+          variantId: edge.node.variants.edges[0]?.node.id,
+          variantPrice: edge.node.variants.edges[0]?.node.price.amount,
+          availableForSale: edge.node.variants.edges[0]?.node.availableForSale
+        }))
+        .filter(product => product.handle !== currentHandle)
+        .slice(0, limit);
+
+      return products;
+    } catch (error) {
+      console.error('Error fetching related products:', error);
+      // Fallback to recent products if related products fetch fails
+      try {
+        const fallbackProducts = await this.fetchProducts({ limit });
+        return fallbackProducts.filter(product => product.handle !== currentHandle);
+      } catch (fallbackError) {
+        console.error('Error fetching fallback products:', fallbackError);
+        return [];
+      }
     }
   }
 }
