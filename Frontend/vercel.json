@@ -17,20 +17,10 @@
     {
       "source": "/robots.txt",
       "destination": "https://techiert.onrender.com/robots.txt"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
     },
     {
-      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|svg|gif)$)",
-      "dest": "/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/((?!api/|_next/|assets/|.*\\..*).*)",
+      "destination": "/index.html"
     }
   ]
 }
