@@ -9,11 +9,17 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/sitemap.xml",
-      "dest": "https://techiert.onrender.com/sitemap.xml"
+      "source": "/sitemap.xml",
+      "destination": "https://techiert.onrender.com/sitemap.xml"
     },
+    {
+      "source": "/robots.txt",
+      "destination": "https://techiert.onrender.com/robots.txt"
+    }
+  ],
+  "routes": [
     {
       "src": "/assets/(.*)",
       "dest": "/assets/$1"

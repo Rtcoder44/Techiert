@@ -1,8 +1,24 @@
 const { SitemapStream, streamToPromise } = require('sitemap');
 const Product = require('../models/product.model');
 const Blog = require('../models/blogs.model');
+const shopifyService = require('../services/shopify.service'); // Import Shopify Service
 const BASE_URL = process.env.BASE_URL || 'https://techiert.com';
 
+// Controller to generate robots.txt
+exports.getRobotsTxt = (req, res) => {
+  res.type('text/plain');
+  res.send(
+`User-agent: *
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login/
+Disallow: /register/
+
+Sitemap: ${BASE_URL}/sitemap.xml`
+  );
+};
+
+// Controller to generate a complete sitemap
 exports.generateSitemap = async (req, res) => {
   try {
     const smStream = new SitemapStream({ hostname: BASE_URL });
@@ -12,9 +28,19 @@ exports.generateSitemap = async (req, res) => {
     smStream.write({ url: '/store', changefreq: 'daily', priority: 0.9 });
     smStream.write({ url: '/blog', changefreq: 'weekly', priority: 0.8 });
 
-    // Products
-    const products = await Product.find({}, 'slug updatedAt').lean();
-    products.forEach(product => {
+    // 1. Add Shopify Products
+    const shopifyProducts = await shopifyService.fetchProducts({ limit: 250 }); // Fetch up to 250 products
+    shopifyProducts.forEach(product => {
+      smStream.write({
+        url: `/store/product/${product.handle}`,
+        changefreq: 'weekly',
+        priority: 0.9,
+      });
+    });
+
+    // 2. Add Local DB Products (if any, ensures legacy products are included)
+    const localProducts = await Product.find({}, 'slug updatedAt').lean();
+    localProducts.forEach(product => {
       smStream.write({
         url: `/store/product/${product.slug}`,
         changefreq: 'weekly',
@@ -23,7 +49,7 @@ exports.generateSitemap = async (req, res) => {
       });
     });
 
-    // Blogs
+    // 3. Add Blogs
     const blogs = await Blog.find({}, 'slug updatedAt').lean();
     blogs.forEach(blog => {
       smStream.write({
