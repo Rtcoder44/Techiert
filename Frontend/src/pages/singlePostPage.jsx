@@ -87,7 +87,15 @@ const SinglePostPage = () => {
   };
 
   if (loading) return <PostSkeleton />;
-  if (!post) return <div className="text-center py-20 text-red-600">Post not found.</div>;
+  if (!post) return (
+    <>
+      <Helmet>
+        <title>404 Not Found | Techiert</title>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+      <div className="text-center py-20 text-red-600">Post not found.</div>
+    </>
+  );
 
   const sanitizedContent = DOMPurify.sanitize(post.content || "");
 
