@@ -9,6 +9,7 @@ import {
   addToGuestCart, 
   initializeCart,
 } from '../redux/slices/cartSlice';
+import { Helmet } from 'react-helmet-async';
 
 // Import new components
 import StoreHero from '../components/store/StoreHero';
@@ -38,15 +39,18 @@ const Store = () => {
     limit: 12
   });
 
+  const [searchValue, setSearchValue] = useState(filters.search);
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         const params = new URLSearchParams(location.search);
         const collectionId = params.get('collection');
+        const search = params.get('search');
         const url = collectionId
-          ? `${API_BASE_URL}/api/shopify/collections/${collectionId}/products`
-          : `${API_BASE_URL}/api/shopify/products`;
+          ? `${API_BASE_URL}/api/shopify/collections/${collectionId}/products${search ? `?search=${encodeURIComponent(search)}` : ''}`
+          : `${API_BASE_URL}/api/shopify/products${search ? `?search=${encodeURIComponent(search)}` : ''}`;
         const response = await axios.get(url);
         setProducts(response.data.products || response.data); // support both formats
         setError(null);
@@ -121,8 +125,17 @@ const Store = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>Techiert Store - Shop the Latest Tech Products</title>
+        <meta name="description" content="Discover and shop the latest technology products at Techiert. Find gadgets, electronics, and more with fast delivery and great prices." />
+        <link rel="canonical" href="https://techiert.com/store" />
+        <meta property="og:title" content="Techiert Store - Shop the Latest Tech Products" />
+        <meta property="og:description" content="Discover and shop the latest technology products at Techiert. Find gadgets, electronics, and more with fast delivery and great prices." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://techiert.com/store" />
+      </Helmet>
       <div className="min-h-screen bg-gray-50">
-        <StoreHero />
+        <StoreHero searchValue={searchValue} onSearchChange={val => { setSearchValue(val); handleFilterChange('search', val); }} />
         <ShopifyNavbar />
         <StoreFeatures />
         <div className="py-12">

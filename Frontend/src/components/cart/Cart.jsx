@@ -8,6 +8,7 @@ import { useAuth } from '../../context/authContext';
 import { showNotification } from '../../utils/notification';
 import LoginGuestModal from '../checkout/LoginGuestModal';
 import { useCurrency } from '../../context/currencyContext';
+import CheckoutFlow from '../checkout/CheckoutFlow';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -15,7 +16,8 @@ const Cart = () => {
   const { user } = useAuth();
   const { items, total, isGuest } = useSelector((state) => state.cart);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
+  const [showCheckout, setShowCheckout] = useState(false);
 
   // Defensive price calculation
   const getItemPrice = (item) => parseFloat(item.product.price || item.product.variantPrice || 0);
@@ -148,14 +150,21 @@ const Cart = () => {
                       </span>
                     </div>
                   </div>
-
-                  <button
-                    onClick={handleProceedToCheckout}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Proceed to Checkout
-                  </button>
-
+                  {currency.code === 'INR' ? (
+                    <button
+                      onClick={() => setShowCheckout(true)}
+                      className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Proceed to Checkout (INR)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleProceedToCheckout}
+                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Proceed to Checkout
+                    </button>
+                  )}
                   <button
                     onClick={() => navigate('/store')}
                     className="w-full text-blue-600 hover:text-blue-700"
@@ -186,6 +195,8 @@ const Cart = () => {
             }
           }}
         />
+
+        <CheckoutFlow isOpen={showCheckout} onClose={() => setShowCheckout(false)} />
 
         <div className="text-center text-sm text-blue-700 mt-8">
           <strong>Estimated delivery:</strong> 15–21 business days. All prices are shown in your local currency. For Indian customers, payments are processed in INR with automatic currency conversion.

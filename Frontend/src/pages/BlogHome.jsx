@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../components/dashboard/dashboardLayout";
 import axios from "axios";
+import { Helmet } from 'react-helmet-async';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -67,6 +68,16 @@ const BlogHome = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>Techiert Blog - Latest Tech News & Guides</title>
+        <meta name="description" content="Read the latest tech news, product reviews, comparisons, and how-to guides on the Techiert Blog." />
+        <link rel="canonical" href="https://techiert.com/blog" />
+        <meta property="og:title" content="Techiert Blog - Latest Tech News & Guides" />
+        <meta property="og:description" content="Read the latest tech news, product reviews, comparisons, and how-to guides on the Techiert Blog." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://techiert.com/blog" />
+      </Helmet>
+
       {/* Hero Section for Latest Post */}
       {latestPost && (
         <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-md mb-10">

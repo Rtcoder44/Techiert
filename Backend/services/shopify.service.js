@@ -462,6 +462,54 @@ class ShopifyService {
       }
     }
   }
+
+  // Create a paid order in Shopify via Admin API (for Razorpay/INR payments)
+  async createPaidOrder({ lineItems, customer, shippingAddress, paymentDetails, note }) {
+    const shop = process.env.SHOPIFY_SHOP_NAME;
+    const accessToken = process.env.SHOPIFY_ADMIN_API_TOKEN;
+    const url = `https://${shop}.myshopify.com/admin/api/2023-10/orders.json`;
+    const orderData = {
+      order: {
+        line_items: lineItems,
+        customer,
+        shipping_address: shippingAddress,
+        financial_status: 'paid',
+        transactions: [
+          {
+            kind: 'sale',
+            status: 'success',
+            amount: paymentDetails.amount_usd,
+            gateway: 'manual',
+          }
+        ],
+        note: note || 'Paid via Razorpay',
+        currency: 'USD',
+      }
+    };
+    
+    console.log('--- [Shopify] Sending Order Data ---');
+    console.log('URL:', url);
+    console.log('Order Data:', JSON.stringify(orderData, null, 2));
+    
+    try {
+      const response = await axios.post(url, orderData, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('--- [Shopify] Order Created Successfully ---');
+      console.log('Response:', JSON.stringify(response.data, null, 2));
+      return response.data.order;
+    } catch (error) {
+      console.error('--- [Shopify] Order Creation Failed ---');
+      console.error('Error Response:', JSON.stringify(error.response?.data, null, 2));
+      console.error('Error Status:', error.response?.status);
+      console.error('Error Headers:', error.response?.headers);
+      console.error('Full Error:', error.message);
+      throw new Error('Failed to create paid order in Shopify');
+    }
+  }
 }
 
 module.exports = new ShopifyService(); 

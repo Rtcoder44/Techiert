@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../context/authContext';
 import axios from 'axios';
@@ -304,6 +304,12 @@ const SingleProduct = () => {
                 title={product.title}
                 imageUrl={product.images && product.images.length > 0 ? product.images[0] : ''}
               />
+
+              <div className="mt-6 flex flex-col items-start gap-2">
+                <Link to="/contact" className="inline-block bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 font-medium">
+                  Have a question or issue with this product? Contact our support team and we will help you.
+                </Link>
+              </div>
             </div>
           </div>
           

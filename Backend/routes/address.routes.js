@@ -13,10 +13,10 @@ const {
 router.use(authMiddleware);
 
 // Routes
-router.post('/addresses', addAddress);
-router.get('/addresses', getAddresses);
-router.put('/addresses/:id', updateAddress);
-router.delete('/addresses/:id', deleteAddress);
-router.put('/addresses/:id/default', setDefaultAddress);
+router.post('/', addAddress);
+router.get('/', getAddresses);
+router.put('/:id', updateAddress);
+router.delete('/:id', deleteAddress);
+router.put('/:id/default', setDefaultAddress);
 
 module.exports = router; 

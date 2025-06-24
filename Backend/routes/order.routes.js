@@ -8,7 +8,9 @@ const {
   createGuestOrder,
   getGuestOrderByNumber,
   getShopifyOrders,
-  getShopifyOrderByNumber
+  getShopifyOrderByNumber,
+  createRazorpayOrder,
+  handleRazorpaySuccess
 } = require('../controllers/order.controller');
 
 // Routes for authenticated users
@@ -23,5 +25,9 @@ router.get('/guest-orders/:orderNumber', getGuestOrderByNumber);
 // Shopify order routes
 router.get('/shopify-orders', authMiddleware, getShopifyOrders);
 router.get('/shopify-orders/track/:orderNumber', getShopifyOrderByNumber);
+
+// Razorpay INR payment routes
+router.post('/razorpay/create', createRazorpayOrder);
+router.post('/razorpay/success', handleRazorpaySuccess);
 
 module.exports = router; 

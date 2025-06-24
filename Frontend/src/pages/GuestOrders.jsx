@@ -4,6 +4,7 @@ import DashboardLayout from '../components/dashboard/dashboardLayout';
 import { FaBox, FaSpinner } from 'react-icons/fa';
 import axios from 'axios';
 import { useCurrency } from '../context/currencyContext';
+import DeliveryStatusStepper from '../components/DeliveryStatusStepper';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -218,46 +219,55 @@ const GuestOrders = () => {
               </button>
             </form>
             {trackingError && <div className="text-red-500 mt-2">{trackingError}</div>}
-            {trackedOrder && (
-              <div className="mt-6 border-t pt-4">
-                <h3 className="text-lg font-semibold mb-2">Order #{trackedOrder.order_number || trackedOrder.id}</h3>
-                <p className="text-gray-600 mb-2">Placed on {new Date(trackedOrder.created_at).toLocaleDateString()}</p>
-                <div className="mb-2">
-                  <span className="font-medium">Status:</span> {trackedOrder.fulfillment_status || trackedOrder.financial_status || 'N/A'}
-                </div>
-                <div className="mb-2">
-                  <span className="font-medium">Total:</span> {formatPrice(trackedOrder.total_price)}
-                </div>
-                {trackedOrder.line_items && trackedOrder.line_items.length > 0 && (
+            {trackedOrder && (() => {
+              const isCancelled = !!trackedOrder.cancelled_at;
+              let lastStatus = null;
+              if (isCancelled) {
+                lastStatus = trackedOrder.fulfillment_status || trackedOrder.financial_status || trackedOrder.status || 'ordered';
+                if (lastStatus === 'cancelled') lastStatus = 'ordered';
+              }
+              return (
+                <div className="mt-6 border-t pt-4">
+                  <h3 className="text-lg font-semibold mb-2">Order #{trackedOrder.order_number || trackedOrder.id}</h3>
+                  <DeliveryStatusStepper currentStatus={isCancelled ? 'cancelled' : (trackedOrder.fulfillment_status || trackedOrder.financial_status || trackedOrder.status)} lastStatus={lastStatus} />
+                  <p className="text-gray-600 mb-2">Placed on {new Date(trackedOrder.created_at).toLocaleDateString()}</p>
                   <div className="mb-2">
-                    <span className="font-medium">Items:</span>
-                    <ul className="list-disc ml-6">
-                      {trackedOrder.line_items.map((item, idx) => (
-                        <li key={idx}>{item.title} x {item.quantity}</li>
+                    <span className="font-medium">Status:</span> {trackedOrder.fulfillment_status || trackedOrder.financial_status || 'N/A'}
+                  </div>
+                  <div className="mb-2">
+                    <span className="font-medium">Total:</span> {formatPrice(trackedOrder.total_price)}
+                  </div>
+                  {trackedOrder.line_items && trackedOrder.line_items.length > 0 && (
+                    <div className="mb-2">
+                      <span className="font-medium">Items:</span>
+                      <ul className="list-disc ml-6">
+                        {trackedOrder.line_items.map((item, idx) => (
+                          <li key={idx}>{item.title} x {item.quantity}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {trackedOrder.fulfillments && trackedOrder.fulfillments.length > 0 && (
+                    <div className="mt-2">
+                      <span className="font-medium">Tracking:</span>
+                      {trackedOrder.fulfillments.map((fulfillment, idx) => (
+                        <div key={idx} className="mb-1">
+                          {fulfillment.tracking_number && (
+                            <>
+                              <span>Tracking Number: {fulfillment.tracking_number}</span>
+                              {fulfillment.tracking_url && (
+                                <a href={fulfillment.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-2">Track Package</a>
+                              )}
+                            </>
+                          )}
+                          <div className="text-sm text-gray-600">Status: {fulfillment.status}</div>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
-                )}
-                {trackedOrder.fulfillments && trackedOrder.fulfillments.length > 0 && (
-                  <div className="mt-2">
-                    <span className="font-medium">Tracking:</span>
-                    {trackedOrder.fulfillments.map((fulfillment, idx) => (
-                      <div key={idx} className="mb-1">
-                        {fulfillment.tracking_number && (
-                          <>
-                            <span>Tracking Number: {fulfillment.tracking_number}</span>
-                            {fulfillment.tracking_url && (
-                              <a href={fulfillment.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-2">Track Package</a>
-                            )}
-                          </>
-                        )}
-                        <div className="text-sm text-gray-600">Status: {fulfillment.status}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {orders.length === 0 ? (
@@ -274,49 +284,58 @@ const GuestOrders = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="bg-white rounded-lg shadow-md p-6"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">
-                        Order #{order.id}
-                      </h3>
-                      <p className="text-gray-600">
-                        Placed on {formatDate(order.date)}
-                      </p>
-                    </div>
-                    <OrderStatusBadge status={order.status} />
-                  </div>
-
-                  <div className="border-t border-b py-4 mb-4">
-                    {order.items?.map((item, index) => (
-                      <OrderItem
-                        key={`${order.id}-${item.productId}-${index}`}
-                        item={item}
-                        index={index}
-                        orderId={order.id}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold">Total</span>
-                      <span className="text-xl font-bold text-blue-600">
-                        {formatPrice((order.total || 0).toFixed(2))}
-                      </span>
+              {orders.map((order) => {
+                const isCancelled = !!order.cancelled_at;
+                let lastStatus = null;
+                if (isCancelled) {
+                  lastStatus = order.fulfillment_status || order.status || order.financial_status || 'ordered';
+                  if (lastStatus === 'cancelled') lastStatus = 'ordered';
+                }
+                return (
+                  <div
+                    key={order.id}
+                    className="bg-white rounded-lg shadow-md p-6"
+                  >
+                    <DeliveryStatusStepper currentStatus={isCancelled ? 'cancelled' : (order.fulfillment_status || order.status || order.financial_status)} lastStatus={lastStatus} />
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">
+                          Order #{order.id}
+                        </h3>
+                        <p className="text-gray-600">
+                          Placed on {formatDate(order.date)}
+                        </p>
+                      </div>
+                      <OrderStatusBadge status={order.status} />
                     </div>
 
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium mb-2">Shipping Address</h4>
-                      <AddressDisplay address={order.shippingAddress} />
+                    <div className="border-t border-b py-4 mb-4">
+                      {order.items?.map((item, index) => (
+                        <OrderItem
+                          key={`${order.id}-${item.productId}-${index}`}
+                          item={item}
+                          index={index}
+                          orderId={order.id}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Total</span>
+                        <span className="text-xl font-bold text-blue-600">
+                          {formatPrice((order.total || 0).toFixed(2))}
+                        </span>
+                      </div>
+
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-2">Shipping Address</h4>
+                        <AddressDisplay address={order.shippingAddress} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
