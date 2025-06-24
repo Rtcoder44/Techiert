@@ -83,6 +83,14 @@ const MyOrders = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold mb-8">My Orders</h1>
 
+        {!user && (
+          <div className="text-center mb-6">
+            <p className="text-gray-700">Want to see your full order history and details?</p>
+            <p className="text-gray-500 text-sm mt-1">Use the same email to login or signup as you used to purchase, to access your order history.</p>
+            <Link to="/login" className="inline-block mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium">Login to view your orders</Link>
+          </div>
+        )}
+
         {error ? (
           <div className="text-red-500 text-center py-4">{error}</div>
         ) : orders.length === 0 ? (

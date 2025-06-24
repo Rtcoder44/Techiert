@@ -16,6 +16,7 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
 
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     phoneNumber: '',
     addressLine1: '',
     addressLine2: '',
@@ -71,6 +72,12 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
     
     if (!formData.name.trim()) {
       newErrors.name = 'Full name is required';
+    }
+    
+    if (!user && !formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!user && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
     
     if (!formData.phoneNumber.trim()) {
@@ -160,6 +167,7 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
     setSelectedAddressId(null);
     setFormData({
       name: '',
+      email: '',
       phoneNumber: '',
       addressLine1: '',
       addressLine2: '',
@@ -342,6 +350,24 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
                   )}
                 </div>
               </div>
+
+              {/* Email */}
+              {!user && (
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email<span className="text-red-500">*</span></label>
+                  <input
+                    type="email"
+                    name="email"
+                    id="email"
+                    autoComplete="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.email ? 'border-red-500' : ''}`}
+                    required
+                  />
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                </div>
+              )}
 
               {/* Address Line 1 */}
               <div>

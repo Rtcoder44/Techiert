@@ -340,6 +340,21 @@ exports.handleRazorpaySuccess = async (req, res) => {
       phone: formatPhoneForShopify(customer.phone)
     };
 
+    // Try to find existing Shopify customer by email or phone
+    let shopifyCustomer = null;
+    if (formattedCustomer.email || formattedCustomer.phone) {
+      shopifyCustomer = await shopifyService.findCustomerByEmailOrPhone({
+        email: formattedCustomer.email,
+        phone: formattedCustomer.phone
+      });
+    }
+
+    // If found, use their ID; otherwise, use the full customer object
+    let customerForOrder = formattedCustomer;
+    if (shopifyCustomer) {
+      customerForOrder = { id: shopifyCustomer.id };
+    }
+
     // Format shipping address data for Shopify
     const formattedShippingAddress = {
       ...shippingAddress,
@@ -348,12 +363,13 @@ exports.handleRazorpaySuccess = async (req, res) => {
 
     // Debug logging
     console.log('--- [Shopify] Order Creation Data ---');
-    console.log('Formatted Customer:', formattedCustomer);
+    console.log('Formatted Customer:', customerForOrder);
     console.log('Formatted Shipping Address:', formattedShippingAddress);
     console.log('Line Items:', lineItems);
 
     // Validate required fields
-    if (!formattedCustomer.email || !formattedCustomer.phone) {
+    const isNewCustomer = !customerForOrder.id;
+    if (isNewCustomer && (!customerForOrder.email || !customerForOrder.phone)) {
       return res.status(400).json({ 
         success: false, 
         error: 'Missing required customer information (email or phone)' 
@@ -374,7 +390,7 @@ exports.handleRazorpaySuccess = async (req, res) => {
     const paymentDetails = { amount: amountINR, amount_usd: amountUSD, razorpayPaymentId: payment_id };
     const shopifyOrder = await shopifyService.createPaidOrder({
       lineItems,
-      customer: formattedCustomer,
+      customer: customerForOrder,
       shippingAddress: formattedShippingAddress,
       paymentDetails,
       note,

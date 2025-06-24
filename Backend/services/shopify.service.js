@@ -510,6 +510,34 @@ class ShopifyService {
       throw new Error('Failed to create paid order in Shopify');
     }
   }
+
+  async findCustomerByEmailOrPhone({ email, phone }) {
+    const shop = process.env.SHOPIFY_SHOP_NAME;
+    const accessToken = process.env.SHOPIFY_ADMIN_API_TOKEN;
+    let url = `https://${shop}.myshopify.com/admin/api/2023-10/customers/search.json?limit=1`;
+    if (email) {
+      url += `&query=email:${encodeURIComponent(email)}`;
+    } else if (phone) {
+      url += `&query=phone:${encodeURIComponent(phone)}`;
+    } else {
+      return null;
+    }
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.data.customers && response.data.customers.length > 0) {
+        return response.data.customers[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error searching Shopify customer:', error.response?.data || error.message);
+      return null;
+    }
+  }
 }
 
 module.exports = new ShopifyService(); 

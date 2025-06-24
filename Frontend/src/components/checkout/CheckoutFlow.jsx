@@ -88,7 +88,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
               })),
               customer: {
                 first_name: address.name,
-                email: user?.email || '',
+                email: user?.email || address.email || '',
                 phone: address.phoneNumber,
               },
               shippingAddress: {
@@ -114,7 +114,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
         },
         prefill: {
           name: address.name,
-          email: user?.email || '',
+          email: user?.email || address.email || '',
           contact: address.phoneNumber,
         },
         theme: { color: '#2563eb' },
@@ -235,12 +235,21 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
                       <p className="mb-2 text-gray-700">Your payment was successful and your order has been placed.</p>
                       <p className="mb-4 text-gray-600">Order ID: <span className="font-mono text-blue-600">{orderResult.id}</span></p>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
-                        <button
-                          onClick={() => { setStep('summary'); setOrderResult(null); onClose(); navigate('/my-orders'); }}
-                          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                          View My Orders
-                        </button>
+                        {user ? (
+                          <button
+                            onClick={() => { setStep('summary'); setOrderResult(null); onClose(); navigate('/my-orders'); }}
+                            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            View My Orders
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => { setStep('summary'); setOrderResult(null); onClose(); navigate('/guest-orders'); }}
+                            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            Track Your Order
+                          </button>
+                        )}
                         <button
                           onClick={() => { setStep('summary'); setOrderResult(null); onClose(); navigate('/store'); }}
                           className="bg-gray-200 text-blue-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
