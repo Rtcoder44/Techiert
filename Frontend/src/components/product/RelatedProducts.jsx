@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaStar } from 'react-icons/fa';
 import axios from 'axios';
-import { useCurrency } from '../../context/currencyContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const RelatedProducts = ({ productHandle, currentProductId }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     const fetchRelatedProducts = async () => {
@@ -92,7 +90,7 @@ const RelatedProducts = ({ productHandle, currentProductId }) => {
               </span>
             </div>
             <p className="mt-1 text-lg font-medium text-gray-900">
-              {formatPrice(product.price)}
+              ${parseFloat(product.price).toFixed(2)}
             </p>
           </Link>
         ))}
