@@ -176,7 +176,31 @@ const SingleProduct = () => {
         <meta property="og:description" content={metaDescription} />
         <meta property="og:image" content={productImage} />
         <meta property="og:type" content="product" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="Techiert" />
         <link rel="canonical" href={canonicalUrl} />
+        {/* Product Structured Data for SEO */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": product.title,
+            "image": product.images,
+            "description": product.description,
+            "sku": product.handle,
+            "brand": {
+              "@type": "Brand",
+              "name": "Techiert"
+            },
+            "offers": {
+              "@type": "Offer",
+              "url": canonicalUrl,
+              "priceCurrency": "INR", // Change if you use a different currency
+              "price": price,
+              "availability": selectedVariant?.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+            }
+          })}
+        </script>
       </Helmet>
       <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
