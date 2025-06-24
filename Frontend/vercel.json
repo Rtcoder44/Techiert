@@ -11,6 +11,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/:match*",
+      "destination": "https://techiert.onrender.com/api/:match*"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://techiert.onrender.com/sitemap.xml"
     },
