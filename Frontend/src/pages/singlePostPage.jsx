@@ -107,9 +107,7 @@ const SinglePostPage = () => {
           name="description"
           content={post.metaDescription?.slice(0, 155) || "Get the latest insights on technology, tutorials, and reviews on Techiert."}
         />
-        <meta name="robots" content="index, follow" />
         <link rel="canonical" href={`https://techiert.com/blog/${post.slug}`} />
-
         {/* Keywords */}
         {post.tags?.length > 0 && (
           <meta name="keywords" content={post.tags.map((tag) => tag.name).join(", ")} />

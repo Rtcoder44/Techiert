@@ -11,17 +11,15 @@ exports.getRobotsTxt = (req, res) => {
 `User-agent: *
 Disallow: /api/
 Disallow: /admin/
-Disallow: /login/
-Disallow: /register/
 
-Sitemap: ${BASE_URL}/sitemap.xml`
+Sitemap: https://techiert.com/sitemap.xml`
   );
 };
 
 // Controller to generate a complete sitemap
 exports.generateSitemap = async (req, res) => {
   try {
-    const smStream = new SitemapStream({ hostname: BASE_URL });
+    const smStream = new SitemapStream({ hostname: 'https://techiert.com' });
 
     // Static pages
     smStream.write({ url: '/', changefreq: 'daily', priority: 1.0 });
@@ -29,35 +27,41 @@ exports.generateSitemap = async (req, res) => {
     smStream.write({ url: '/blog', changefreq: 'weekly', priority: 0.8 });
 
     // 1. Add Shopify Products
-    const shopifyProducts = await shopifyService.fetchProducts({ limit: 250 }); // Fetch up to 250 products
+    const shopifyProducts = await shopifyService.fetchProducts({ limit: 250 });
     shopifyProducts.forEach(product => {
-      smStream.write({
-        url: `/store/product/${product.handle}`,
-        changefreq: 'weekly',
-        priority: 0.9,
-      });
+      if (product.handle && product.title && product.description) {
+        smStream.write({
+          url: `/store/product/${product.handle}`,
+          changefreq: 'weekly',
+          priority: 0.9,
+        });
+      }
     });
 
     // 2. Add Local DB Products (if any, ensures legacy products are included)
-    const localProducts = await Product.find({}, 'slug updatedAt').lean();
+    const localProducts = await Product.find({}, 'slug updatedAt title description').lean();
     localProducts.forEach(product => {
-      smStream.write({
-        url: `/store/product/${product.slug}`,
-        changefreq: 'weekly',
-        priority: 0.9,
-        lastmod: product.updatedAt,
-      });
+      if (product.slug && product.title && product.description) {
+        smStream.write({
+          url: `/store/product/${product.slug}`,
+          changefreq: 'weekly',
+          priority: 0.9,
+          lastmod: product.updatedAt,
+        });
+      }
     });
 
     // 3. Add Blogs
-    const blogs = await Blog.find({}, 'slug updatedAt').lean();
+    const blogs = await Blog.find({}, 'slug updatedAt title content').lean();
     blogs.forEach(blog => {
-      smStream.write({
-        url: `/blog/${blog.slug}`,
-        changefreq: 'weekly',
-        priority: 0.7,
-        lastmod: blog.updatedAt,
-      });
+      if (blog.slug && blog.title && blog.content) {
+        smStream.write({
+          url: `/blog/${blog.slug}`,
+          changefreq: 'weekly',
+          priority: 0.7,
+          lastmod: blog.updatedAt,
+        });
+      }
     });
 
     smStream.end();
