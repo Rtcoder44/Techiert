@@ -3,6 +3,7 @@ const router = express.Router();
 const shopifyService = require('../services/shopify.service');
 const { authMiddleware } = require('../middlewares/auth.middleware');
 const Order = require('../models/order.model');
+const { getCache, setCache, delCache } = require('../utils/redisClient');
 
 // Test route
 router.get('/test', (req, res) => {
@@ -100,12 +101,30 @@ router.get('/products/:id', async (req, res) => {
   }
 });
 
-// Get product by handle (slug)
+// Get product by handle (slug) with Redis caching
 router.get('/products/handle/:handle', async (req, res) => {
+  const cacheKey = `shopifyProduct:${req.params.handle}`;
   try {
+    // Try Redis cache first
+    let cached = null;
+    try {
+      cached = await getCache(cacheKey);
+    } catch (redisErr) {
+      console.warn('Redis unavailable, skipping cache:', redisErr.message);
+    }
+    if (cached) {
+      return res.json({ product: cached });
+    }
+    // Fetch from Shopify if not cached
     const product = await shopifyService.fetchProductByHandle(req.params.handle);
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
+    }
+    // Cache for 5 minutes (300 seconds)
+    try {
+      await setCache(cacheKey, product, 300);
+    } catch (redisErr) {
+      console.warn('Redis unavailable, could not set cache:', redisErr.message);
     }
     res.json({ product });
   } catch (error) {

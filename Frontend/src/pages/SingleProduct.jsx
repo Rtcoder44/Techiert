@@ -47,38 +47,56 @@ const SingleProduct = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    let isMounted = true;
+    const fetchProduct = async (attempt = 1) => {
       try {
         setLoading(true);
+        setError(null);
         const response = await axios.get(`${API_BASE_URL}/api/shopify/products/handle/${handle}`);
         const prod = response.data.product;
-        setProduct(prod);
-        setSelectedVariant(prod.variants && prod.variants.length > 0 ? prod.variants[0] : null);
-        
-        // Fetch AI content
-        if (prod.title) {
-          setIsAiContentLoading(true);
-          try {
-            const aiResponse = await axios.post(`${API_BASE_URL}/api/gemini/generate-product-content`, {
-              title: prod.title,
-              description: prod.description,
-            });
-            if (aiResponse.data.success) {
-              setAiContent(aiResponse.data.content);
+        if (isMounted) {
+          setProduct(prod);
+          setSelectedVariant(prod.variants && prod.variants.length > 0 ? prod.variants[0] : null);
+          // Fetch AI content
+          if (prod.title) {
+            setIsAiContentLoading(true);
+            try {
+              const aiResponse = await axios.post(`${API_BASE_URL}/api/gemini/generate-product-content`, {
+                title: prod.title,
+                description: prod.description,
+              });
+              if (aiResponse.data.success) {
+                setAiContent(aiResponse.data.content);
+              }
+            } catch (error) {
+              console.error('Failed to fetch AI content', error);
+            } finally {
+              setIsAiContentLoading(false);
             }
-          } catch (error) {
-            console.error('Failed to fetch AI content', error);
-          } finally {
-            setIsAiContentLoading(false);
           }
         }
       } catch (err) {
-        setError('Failed to load product details');
+        // Only show NotFound if backend returns 404
+        if (err.response && err.response.status === 404) {
+          if (isMounted) {
+            setProduct(null);
+            setError(null);
+          }
+        } else if (attempt < 3) {
+          // Retry up to 3 times for network/API errors
+          setTimeout(() => fetchProduct(attempt + 1), 1000 * attempt);
+        } else {
+          // For persistent network errors, show loading spinner (do not show NotFound)
+          if (isMounted) {
+            setError('network');
+          }
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     fetchProduct();
+    return () => { isMounted = false; };
   }, [handle]);
 
   const handleQuantityChange = (value) => {
@@ -118,7 +136,7 @@ const SingleProduct = () => {
     navigate('/cart');
   };
 
-  if (loading) {
+  if (loading || error === 'network') {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center min-h-screen">
