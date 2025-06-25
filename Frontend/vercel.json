@@ -1,5 +1,12 @@
 {
   "version": 2,
+  "redirects": [
+    {
+      "source": "https://www.techiert.com/:path*",
+      "destination": "https://techiert.com/:path*",
+      "permanent": true
+    }
+  ],
   "builds": [
     {
       "src": "package.json",
