@@ -15,6 +15,8 @@ import AiProductDetails, { AiDetailsSkeleton } from '../components/product/AiPro
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+const SEO_FALLBACK_DESCRIPTION = 'Discover this high-quality tech product at Techiert. Unique, reliable, and perfect for your needs. Full details coming soon!';
+
 const TabButton = ({ isActive, onClick, children }) => (
   <button
     onClick={onClick}
@@ -45,6 +47,7 @@ const SingleProduct = () => {
   const [aiContent, setAiContent] = useState('');
   const [isAiContentLoading, setIsAiContentLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [generatedDescription, setGeneratedDescription] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -57,22 +60,36 @@ const SingleProduct = () => {
         if (isMounted) {
           setProduct(prod);
           setSelectedVariant(prod.variants && prod.variants.length > 0 ? prod.variants[0] : null);
-          // Fetch AI content
-          if (prod.title) {
-            setIsAiContentLoading(true);
-            try {
-              const aiResponse = await axios.post(`${API_BASE_URL}/api/gemini/generate-product-content`, {
-                title: prod.title,
-                description: prod.description,
-              });
-              if (aiResponse.data.success) {
-                setAiContent(aiResponse.data.content);
-              }
-            } catch (error) {
-              console.error('Failed to fetch AI content', error);
-            } finally {
-              setIsAiContentLoading(false);
+          // --- Gemini logic for missing/short description and all AI sections ---
+          let needsGeminiDesc = !prod.description || prod.description.trim().length < 30;
+          setIsAiContentLoading(true);
+          try {
+            // Enhanced prompt for SEO, uniqueness, human tone
+            const prompt = `You are an expert e-commerce copywriter. Write a unique, humanized, SEO-optimized, plagiarism-free, and AI-undetectable product description for the following product. Use a natural, helpful, and enthusiastic tone. Do not copy from any source. Make sure the information is accurate and useful for real customers. Include relevant keywords for Google SEO. If product details are missing, use your best judgment to create plausible, non-misleading content.\n\nProduct Title: "${prod.title}"\nProduct Details: "${prod.description || prod.title + (prod.tags ? (' ' + prod.tags.join(', ')) : '')}"`;
+            // Always generate AI content for overview/how to use/why love it
+            const aiResponse = await axios.post(`${API_BASE_URL}/api/gemini/generate-product-content`, {
+              title: prod.title,
+              description: prod.description || prod.title + (prod.tags ? (' ' + prod.tags.join(', ')) : ''),
+              prompt // pass enhanced prompt
+            });
+            if (aiResponse.data.success) {
+              setAiContent(aiResponse.data.content);
+            } else {
+              setAiContent(SEO_FALLBACK_DESCRIPTION);
             }
+            // If missing/short description, use Gemini for main description too
+            if (needsGeminiDesc && aiResponse.data.content) {
+              // Extract the first section as the main description (or use all)
+              const match = aiResponse.data.content.match(/### ✨ Product Overview([\s\S]*?)(###|$)/);
+              setGeneratedDescription(match ? match[1].trim() : aiResponse.data.content.trim());
+            } else {
+              setGeneratedDescription(prod.description);
+            }
+          } catch (error) {
+            setAiContent(SEO_FALLBACK_DESCRIPTION);
+            if (needsGeminiDesc) setGeneratedDescription(SEO_FALLBACK_DESCRIPTION);
+          } finally {
+            setIsAiContentLoading(false);
           }
         }
       } catch (err) {
@@ -202,7 +219,7 @@ const SingleProduct = () => {
 
   // SEO tags
   const metaTitle = `${product.title} | Techiert Store`;
-  const metaDescription = product.description?.slice(0, 160) || 'Shop the best tech products at Techiert.';
+  const metaDescription = generatedDescription || SEO_FALLBACK_DESCRIPTION;
   const metaKeywords = product.tags ? product.tags.join(', ') : '';
   const productImage = product.images && product.images.length > 0 ? product.images[0] : '/default-product.jpg';
   const canonicalUrl = `https://techiert.com/store/product/${product.handle}`;
@@ -381,7 +398,7 @@ const SingleProduct = () => {
 
               {activeTab === 'details' && (
                 <div className="prose prose-lg max-w-none">
-                  <p>{product.description}</p>
+                  <p>{generatedDescription || product.description}</p>
                 </div>
               )}
 
