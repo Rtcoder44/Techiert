@@ -3,7 +3,7 @@ const rateLimit = require("express-rate-limit");
 const createRateLimiter = (options = {}) => {
   return rateLimit({
     windowMs: options.windowMs || 15 * 60 * 1000, // default 15 minutes
-    max: options.max || 10, // default 10 requests per window
+    max: options.max || 100, // default 100 requests per window
     standardHeaders: true,
     legacyHeaders: false,
     message: options.message || {

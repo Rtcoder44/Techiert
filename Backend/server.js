@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const compression = require('compression');
+const helmet = require('helmet');
 require("dotenv").config();
 
 
@@ -15,6 +16,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(compression());
+app.use(helmet());
 
 // Allowed CORS origins
 const allowedOrigins = [
