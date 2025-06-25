@@ -118,9 +118,10 @@ router.get('/products/handle/:handle', async (req, res) => {
     // Fetch from Shopify if not cached
     const product = await shopifyService.fetchProductByHandle(req.params.handle);
     if (!product) {
+      // Do NOT cache null/404 responses
       return res.status(404).json({ error: 'Product not found' });
     }
-    // Cache for 5 minutes (300 seconds)
+    // Only cache if product is found and valid
     try {
       await setCache(cacheKey, product, 300);
     } catch (redisErr) {
@@ -128,6 +129,7 @@ router.get('/products/handle/:handle', async (req, res) => {
     }
     res.json({ product });
   } catch (error) {
+    // Do NOT cache errors
     res.status(500).json({ error: error.message });
   }
 });
