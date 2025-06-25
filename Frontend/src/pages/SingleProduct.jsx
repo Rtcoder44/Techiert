@@ -128,7 +128,30 @@ const SingleProduct = () => {
     );
   }
 
-  if (error || !product) {
+  if (error) {
+    return (
+      <>
+        <Helmet>
+          <title>Product Error | Techiert</title>
+        </Helmet>
+        <DashboardLayout>
+          <div className="flex flex-col items-center justify-center min-h-screen">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">
+              {error}
+            </h2>
+            <button
+              onClick={() => navigate('/store')}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Return to Store
+            </button>
+          </div>
+        </DashboardLayout>
+      </>
+    );
+  }
+
+  if (!product) {
     return (
       <>
         <Helmet>
@@ -138,7 +161,7 @@ const SingleProduct = () => {
         <DashboardLayout>
           <div className="flex flex-col items-center justify-center min-h-screen">
             <h2 className="text-2xl font-bold text-red-600 mb-4">
-              {error || 'Product not found'}
+              Product not found
             </h2>
             <button
               onClick={() => navigate('/store')}
