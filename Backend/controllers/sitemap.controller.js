@@ -2,6 +2,7 @@ const { SitemapStream, streamToPromise } = require('sitemap');
 const Product = require('../models/product.model');
 const Blog = require('../models/blogs.model');
 const shopifyService = require('../services/shopify.service'); // Import Shopify Service
+const gemini = require('../services/gemini.service'); // Import Gemini service
 const BASE_URL = process.env.BASE_URL || 'https://techiert.com';
 
 // Controller to generate robots.txt
@@ -28,15 +29,25 @@ exports.generateSitemap = async (req, res) => {
 
     // 1. Add Shopify Products
     const shopifyProducts = await shopifyService.fetchProducts({ limit: 250 });
-    shopifyProducts.forEach(product => {
-      if (product.handle && product.title && product.description) {
+    for (const product of shopifyProducts) {
+      let description = product.description;
+      if (product.handle && product.title) {
+        if (!description || description.trim().length < 20) {
+          // Generate description with Gemini if missing or too short
+          try {
+            description = await gemini.generateProductDetails(product.title, product.title + (product.tags ? (" " + product.tags.join(", ")) : ""));
+          } catch (err) {
+            console.error(`Gemini failed for product ${product.handle}:`, err.message);
+            description = 'High-quality product from Techiert.'; // fallback
+          }
+        }
         smStream.write({
           url: `/store/product/${product.handle}`,
           changefreq: 'weekly',
           priority: 0.9,
         });
       }
-    });
+    }
 
     // 2. Add Local DB Products (if any, ensures legacy products are included)
     const localProducts = await Product.find({}, 'slug updatedAt title description').lean();
