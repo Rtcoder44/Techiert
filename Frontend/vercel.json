@@ -2,7 +2,10 @@
   "version": 2,
   "redirects": [
     {
-      "source": "https://www.techiert.com/:path*",
+      "source": "/:path*",
+      "has": [
+        { "host": "www.techiert.com" }
+      ],
       "destination": "https://techiert.com/:path*",
       "permanent": true
     }
