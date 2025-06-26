@@ -81,6 +81,10 @@ const productSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  aiContent: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true
@@ -97,4 +101,13 @@ productSchema.pre('save', function(next) {
 productSchema.index({ slug: 1 });
 productSchema.index({ updatedAt: -1 });
 
-module.exports = mongoose.model('Product', productSchema);
+const aiProductContentSchema = new mongoose.Schema({
+  handle: { type: String, required: true, unique: true },
+  shopifyId: { type: String },
+  aiContent: { type: String, required: true },
+}, { timestamps: true });
+
+module.exports = {
+  product: mongoose.model('Product', productSchema),
+  aiProductContent: mongoose.model('AiProductContent', aiProductContentSchema)
+};

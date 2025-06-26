@@ -20,7 +20,6 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../../context/authContext";
 import axios from "axios";
-import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -194,11 +193,10 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
   const menuItems = getMenuItems();
 
   return (
-    <motion.div
-      initial={false}
-      animate={{ x: isOpen ? 0 : "-100%" }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed top-0 left-0 h-screen w-64 bg-[#1E293B] border-r border-slate-700/50 shadow-xl z-40 flex flex-col"
+    <div
+      className={`fixed top-0 left-0 h-screen w-64 bg-[#1E293B] border-r border-slate-700/50 shadow-xl z-40 flex flex-col transition-transform duration-300 ease-in-out ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
     >
       {/* Header */}
       <div className="h-16 px-4 flex items-center justify-between border-b border-slate-700/50">
@@ -236,38 +234,33 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
                             <span className="text-lg">{item.icon}</span>
                             <span>{item.name}</span>
                           </div>
-                          <motion.div
-                            animate={{ rotate: isCategoryOpen ? 180 : 0 }}
-                            transition={{ duration: 0.2 }}
+                          <div
+                            className={`transition-transform duration-200 ${
+                              isCategoryOpen ? 'rotate-180' : 'rotate-0'
+                            }`}
                           >
                             <FaChevronDown className="text-sm opacity-75" />
-                          </motion.div>
+                          </div>
                         </button>
-                        <AnimatePresence>
-                          {isCategoryOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="mt-1"
-                            >
-                              {categories.map((category) => (
-                                <Link
-                                  key={category._id}
-                                  to={`/blog/category/${category.slug}`}
-                                  className={`flex items-center pl-11 pr-3 py-2 text-sm transition-colors ${
-                                    isActive(`/blog/category/${category.slug}`)
-                                      ? "bg-slate-700 text-white"
-                                      : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-                                  }`}
-                                >
-                                  {category.name}
-                                </Link>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                        <div className={`overflow-hidden transition-all duration-200 ${
+                          isCategoryOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                        }`}>
+                          <div className="mt-1">
+                            {categories.map((category) => (
+                              <Link
+                                key={category._id}
+                                to={`/blog/category/${category.slug}`}
+                                className={`flex items-center pl-11 pr-3 py-2 text-sm transition-colors ${
+                                  isActive(`/blog/category/${category.slug}`)
+                                    ? "bg-slate-700 text-white"
+                                    : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                                }`}
+                              >
+                                {category.name}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     );
                   }
@@ -285,11 +278,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
                       <span className="text-lg">{item.icon}</span>
                       <span>{item.name}</span>
                       {isActive(item.path) && (
-                        <motion.div
-                          layoutId="active-pill"
-                          className="absolute left-0 w-1 h-full bg-blue-500 rounded-r"
-                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                        />
+                        <div className="absolute left-0 w-1 h-full bg-blue-500 rounded-r" />
                       )}
                     </Link>
                   );
@@ -332,7 +321,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
           </Link>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

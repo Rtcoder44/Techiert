@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../context/authContext';
 import axios from 'axios';
 import { FaTruck, FaShieldAlt, FaUndo } from 'react-icons/fa';
-import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/dashboard/dashboardLayout';
 import { addToGuestCart } from '../redux/slices/cartSlice';
 import RelatedProducts from '../components/product/RelatedProducts';
@@ -60,56 +59,37 @@ const SingleProduct = () => {
         if (isMounted) {
           setProduct(prod);
           setSelectedVariant(prod.variants && prod.variants.length > 0 ? prod.variants[0] : null);
-          // --- Gemini logic for missing/short description and all AI sections ---
-          let needsGeminiDesc = !prod.description || prod.description.trim().length < 30;
-          setIsAiContentLoading(true);
-          try {
-            // Enhanced prompt for SEO, uniqueness, human tone
-            const prompt = `You are an expert e-commerce copywriter. Write a unique, humanized, SEO-optimized, plagiarism-free, and AI-undetectable product description for the following product. Use a natural, helpful, and enthusiastic tone. Do not copy from any source. Make sure the information is accurate and useful for real customers. Include relevant keywords for Google SEO. If product details are missing, use your best judgment to create plausible, non-misleading content.\n\nProduct Title: "${prod.title}"\nProduct Details: "${prod.description || prod.title + (prod.tags ? (' ' + prod.tags.join(', ')) : '')}"`;
-            // Always generate AI content for overview/how to use/why love it
-            const aiResponse = await axios.post(`${API_BASE_URL}/api/gemini/generate-product-content`, {
-              title: prod.title,
-              description: prod.description || prod.title + (prod.tags ? (' ' + prod.tags.join(', ')) : ''),
-              prompt // pass enhanced prompt
-            });
-            if (aiResponse.data.success) {
-              setAiContent(aiResponse.data.content);
-            } else {
-              setAiContent(SEO_FALLBACK_DESCRIPTION);
-            }
-            // If missing/short description, use Gemini for main description too
-            if (needsGeminiDesc && aiResponse.data.content) {
+          setLoading(false); // Show product info immediately
+          // Use aiContent if present
+          if (prod.aiContent && prod.aiContent.trim().length > 0) {
+            setAiContent(prod.aiContent);
               // Extract the first section as the main description (or use all)
-              const match = aiResponse.data.content.match(/### ✨ Product Overview([\s\S]*?)(###|$)/);
-              setGeneratedDescription(match ? match[1].trim() : aiResponse.data.content.trim());
+            const match = prod.aiContent.match(/### ✨ Product Overview([\s\S]*?)(###|$)/);
+            setGeneratedDescription(match ? match[1].trim() : prod.aiContent.trim());
+            setIsAiContentLoading(false);
+          } else if (!prod.description || prod.description.trim().length < 30) {
+            setAiContent('');
+            setGeneratedDescription('');
+            setIsAiContentLoading(true); // Show spinner if no AI content and no description
             } else {
               setGeneratedDescription(prod.description);
-            }
-          } catch (error) {
-            setAiContent(SEO_FALLBACK_DESCRIPTION);
-            if (needsGeminiDesc) setGeneratedDescription(SEO_FALLBACK_DESCRIPTION);
-          } finally {
             setIsAiContentLoading(false);
           }
         }
       } catch (err) {
-        // Only show NotFound if backend returns 404
         if (err.response && err.response.status === 404) {
           if (isMounted) {
             setProduct(null);
             setError(null);
           }
         } else if (attempt < 3) {
-          // Retry up to 3 times for network/API errors
           setTimeout(() => fetchProduct(attempt + 1), 1000 * attempt);
         } else {
-          // For persistent network errors, show loading spinner (do not show NotFound)
           if (isMounted) {
             setError('network');
           }
         }
-      } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     };
     fetchProduct();

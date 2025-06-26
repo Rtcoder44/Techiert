@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useAuth } from '../context/authContext';
 import { useCurrency } from '../context/currencyContext';
 import DashboardLayout from '../components/dashboard/dashboardLayout';
-import { motion } from 'framer-motion';
 import { FaBox, FaTruck, FaCheck, FaTimes } from 'react-icons/fa';
 import DeliveryStatusStepper from '../components/DeliveryStatusStepper';
 
@@ -105,8 +104,8 @@ const MyOrders = () => {
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
-            {orders.map((order) => {
+          <div className="space-y-6 stagger-container">
+            {orders.map((order, index) => {
               const isCancelled = !!order.cancelled_at;
               // Determine last real status before cancellation
               let lastStatus = null;
@@ -115,11 +114,9 @@ const MyOrders = () => {
                 if (lastStatus === 'cancelled') lastStatus = 'ordered'; // fallback if no other info
               }
               return (
-                <motion.div
+                <div
                   key={order.id || order.order_number || order._id || order.orderNumber}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
+                  className="bg-white rounded-lg shadow-md overflow-hidden animate-stagger-item"
                 >
                   <div className="p-6">
                     {/* Delivery Stepper */}
@@ -200,24 +197,31 @@ const MyOrders = () => {
                         {order.fulfillments.map((fulfillment, idx) => (
                           <div key={idx} className="mb-2">
                             {fulfillment.tracking_number && (
-                              <div>
+                              <p className="text-sm">
                                 <span className="font-medium">Tracking Number:</span> {fulfillment.tracking_number}
-                                {fulfillment.tracking_url && (
-                                  <>
-                                    {' '}<a href={fulfillment.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-2">Track Package</a>
-                                  </>
-                                )}
-                              </div>
+                              </p>
                             )}
-                            <div className="text-sm text-gray-600">
-                              Status: {fulfillment.status}
-                            </div>
+                            {fulfillment.tracking_company && (
+                              <p className="text-sm">
+                                <span className="font-medium">Carrier:</span> {fulfillment.tracking_company}
+                              </p>
+                            )}
+                            {fulfillment.tracking_url && (
+                              <a
+                                href={fulfillment.tracking_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                Track Package →
+                              </a>
+                            )}
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>

@@ -1,5 +1,7 @@
 const { Shopify } = require('@shopify/shopify-api');
 const axios = require('axios');
+const { product: Product, aiProductContent } = require('../models/product.model');
+const { generateProductDetails } = require('./gemini.service');
 
 class ShopifyService {
   constructor() {
@@ -276,6 +278,22 @@ class ShopifyService {
   }
 
   async fetchProductByHandle(handle) {
+    // First, check local DB for aiContent and other fields
+    const localProduct = await Product.findOne({ slug: handle }).lean();
+    if (localProduct) {
+      return {
+        id: localProduct._id,
+        handle: localProduct.slug,
+        title: localProduct.title,
+        description: localProduct.description,
+        tags: [], // Add tags if you store them locally
+        images: (localProduct.images || []).map(img => img.url || img),
+        price: localProduct.price,
+        variants: [], // Add variants if you store them locally
+        aiContent: localProduct.aiContent || '',
+      };
+    }
+    // If not found locally, fetch from Shopify
     const client = await this.initialize();
     const query = `
       query getProductByHandle($handle: String!) {
@@ -315,6 +333,19 @@ class ShopifyService {
     const response = await client.request(query, { handle });
     const product = response.productByHandle;
     if (!product) return null;
+    // Check for AI content in AiProductContent collection
+    let aiContentDoc = await aiProductContent.findOne({ handle });
+    let aiContent = aiContentDoc ? aiContentDoc.aiContent : '';
+    // If not found, generate and store
+    if (!aiContent && (!product.description || product.description.trim().length < 30)) {
+      try {
+        aiContent = await generateProductDetails(product.title, product.description || product.title);
+        await aiProductContent.create({ handle, shopifyId: product.id, aiContent });
+      } catch (err) {
+        console.error('Gemini generation failed:', err.message);
+        aiContent = '';
+      }
+    }
     return {
       id: product.id,
       handle: product.handle,
@@ -328,7 +359,8 @@ class ShopifyService {
         title: edge.node.title,
         price: edge.node.price.amount,
         availableForSale: edge.node.availableForSale
-      }))
+      })),
+      aiContent: aiContent,
     };
   }
 

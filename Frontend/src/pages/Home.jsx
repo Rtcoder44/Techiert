@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { motion } from 'framer-motion';
 import { FaShoppingBag, FaBlog, FaArrowRight, FaTag } from 'react-icons/fa';
 import { useCurrency } from '../context/currencyContext';
 
@@ -78,9 +77,8 @@ const Home = () => {
               ))
             ) : (
               featuredProducts.map(product => (
-                <motion.div
+                <div
                   key={product.id}
-                  whileHover={{ y: -5 }}
                   className="bg-white rounded-lg shadow-md overflow-hidden"
                 >
                   <Link to={`/store/product/${product.id}`}>
@@ -108,7 +106,7 @@ const Home = () => {
                       </div>
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               ))
             )}
           </div>
@@ -139,9 +137,8 @@ const Home = () => {
               ))
             ) : (
               featuredPosts.map(post => (
-                <motion.div
+                <div
                   key={post._id}
-                  whileHover={{ y: -5 }}
                   className="bg-gray-50 rounded-lg overflow-hidden"
                 >
                   <Link to={`/blog/${post.slug}`}>
@@ -175,7 +172,7 @@ const Home = () => {
                       </div>
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               ))
             )}
           </div>

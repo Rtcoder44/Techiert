@@ -3,6 +3,8 @@ const ProductCategory = require('../models/productCategory.model');
 const cloudinary = require('../config/cloudinary');
 const slugify = require('slugify');
 const mongoose = require('mongoose');
+const { setCache, getCache, delCache, delCacheByPattern } = require('../utils/redisClient');
+const { generateProductDetails } = require('../services/gemini.service');
 
 // Optimized image upload function
 const uploadImage = async (file) => {
@@ -95,6 +97,16 @@ exports.createProduct = async (req, res) => {
       }
     }
 
+    let aiContent = '';
+    if (!description || description.trim().length < 30) {
+      try {
+        aiContent = await generateProductDetails(title, description || title);
+      } catch (err) {
+        console.error('Gemini generation failed:', err.message);
+        aiContent = '';
+      }
+    }
+
     const product = await Product.create({
       title,
       slug,
@@ -105,6 +117,7 @@ exports.createProduct = async (req, res) => {
       specifications: specificationsData,
       images,
       createdBy: req.user._id,
+      aiContent,
     });
 
     res.status(201).json({ success: true, product });
@@ -213,7 +226,7 @@ exports.updateProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({ success: false, error: "Product not found" });
     }
-
+    const oldSlug = product.slug;
     const updateData = { ...req.body };
 
     // Update slug if title is changed
@@ -291,6 +304,12 @@ exports.updateProduct = async (req, res) => {
       { new: true, runValidators: true }
     ).populate("category");
 
+    // Clear product cache for old and new slug/handle
+    if (oldSlug) await delCache(`shopifyProduct:${oldSlug}`);
+    if (product.slug && product.slug !== oldSlug) await delCache(`shopifyProduct:${product.slug}`);
+    // Clear product list cache
+    await delCacheByPattern('shopifyProduct:*');
+    await delCacheByPattern('products:*');
     res.status(200).json({ success: true, product });
   } catch (error) {
     console.error('Error updating product:', error);
@@ -314,6 +333,11 @@ exports.deleteProduct = async (req, res) => {
 
     await Product.findByIdAndDelete(req.params.id);
 
+    // Clear product cache for slug/handle
+    if (product.slug) await delCache(`shopifyProduct:${product.slug}`);
+    // Clear product list cache
+    await delCacheByPattern('shopifyProduct:*');
+    await delCacheByPattern('products:*');
     res.status(200).json({
       success: true,
       message: "Product deleted successfully",

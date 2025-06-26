@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronDown } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -62,35 +61,27 @@ const CategoryMenu = ({ onSelectCategory }) => {
                   </button>
 
                   {/* Dropdown only if children exist and category is hovered */}
-                  <AnimatePresence>
-                    {hoveredCategory === category._id && hasChildren && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 w-48 bg-white shadow-lg rounded-md py-2 z-50 border border-gray-200"
-                      >
-                        {category.children.map((child) => (
-                          <button
-                            key={child._id}
-                            onClick={() => onSelectCategory(child._id)}
-                            className="block px-4 py-2 text-left text-gray-700 hover:bg-blue-50 w-full"
-                          >
-                            {child.name}
-                          </button>
-                        ))}
-
-                        {/* Optionally a "View All" button */}
+                  {hoveredCategory === category._id && hasChildren && (
+                    <div className="absolute top-full left-0 w-48 bg-white shadow-lg rounded-md py-2 z-50 border border-gray-200">
+                      {category.children.map((child) => (
                         <button
-                          onClick={() => onSelectCategory(category._id)}
-                          className="mt-1 px-4 py-2 text-left text-blue-600 hover:bg-blue-100 w-full font-semibold border-t border-gray-100"
+                          key={child._id}
+                          onClick={() => onSelectCategory(child._id)}
+                          className="block px-4 py-2 text-left text-gray-700 hover:bg-blue-50 w-full"
                         >
-                          View All {category.name}
+                          {child.name}
                         </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      ))}
+
+                      {/* Optionally a "View All" button */}
+                      <button
+                        onClick={() => onSelectCategory(category._id)}
+                        className="mt-1 px-4 py-2 text-left text-blue-600 hover:bg-blue-100 w-full font-semibold border-t border-gray-100"
+                      >
+                        View All {category.name}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })

@@ -17,7 +17,6 @@ import {
   FaExclamationCircle,
   FaLock
 } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -365,19 +364,17 @@ const ProfileSettings = () => {
             </div>
           )}
 
-          <AnimatePresence>
-            {showAddressForm && (
-              <div className="mb-6 p-6 bg-gray-50 rounded-xl border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
-                  <FaPlus className="mr-2 text-blue-600" /> Add New Address
-                </h3>
-                <AddressForm
-                  onSubmit={handleAddAddress}
-                  onCancel={() => setShowAddressForm(false)}
-                />
-              </div>
-            )}
-          </AnimatePresence>
+          {showAddressForm && (
+            <div className="mb-6 p-6 bg-gray-50 rounded-xl border border-gray-200">
+              <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                <FaPlus className="mr-2 text-blue-600" /> Add New Address
+              </h3>
+              <AddressForm
+                onSubmit={handleAddAddress}
+                onCancel={() => setShowAddressForm(false)}
+              />
+            </div>
+          )}
 
           <div className="grid gap-6 sm:grid-cols-2">
             {addresses.map((address) => (

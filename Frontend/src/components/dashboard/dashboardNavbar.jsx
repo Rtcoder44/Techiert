@@ -3,10 +3,9 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/authContext";
 import { useSelector } from 'react-redux';
+import axios from "axios";
 import TechiertLogo from "../techiert.logo";
 import { FaSearch, FaTimes, FaBlog, FaStore, FaShoppingCart, FaClipboardList, FaBars } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -17,6 +16,8 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Debounce search query
   React.useEffect(() => {
@@ -27,6 +28,7 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
       } else {
         setDebouncedQuery("");
         setSearchResults([]);
+        setShowSearchResults(false);
       }
     }, 300);
 
@@ -37,9 +39,12 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
   React.useEffect(() => {
     if (debouncedQuery === "") {
       setSearchResults([]);
+      setShowSearchResults(false);
+      setIsSearching(false);
       return;
     }
 
+    setIsSearching(true);
     axios
       .post(`${API_BASE_URL}/api/blogs/search`, {
         query: debouncedQuery,
@@ -47,14 +52,38 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
       })
       .then((response) => {
         setSearchResults(response.data.results || []);
+        setShowSearchResults(true);
       })
       .catch((error) => {
         console.error("Error searching blogs:", error);
+        setSearchResults([]);
+      })
+      .finally(() => {
+        setIsSearching(false);
       });
   }, [debouncedQuery, user?.id]);
 
   const handleSearch = (event) => {
     setSearchQuery(event.target.value);
+  };
+
+  const handleSearchFocus = () => {
+    if (searchResults.length > 0) {
+      setShowSearchResults(true);
+    }
+  };
+
+  const handleSearchBlur = () => {
+    // Delay hiding results to allow clicking on them
+    setTimeout(() => {
+      setShowSearchResults(false);
+    }, 200);
+  };
+
+  const handleResultClick = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowSearchResults(false);
   };
 
   const navLinks = [
@@ -126,8 +155,8 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
             </div>
           </div>
 
-          {/* Right Section - Search Only */}
-          <div className="flex items-center">
+          {/* Right Section - Search */}
+          <div className="flex items-center gap-4">
             <div className="hidden md:block relative">
               <div className="relative">
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -137,86 +166,113 @@ const DashboardNavbar = ({ isOpen, toggleSidebar }) => {
                   className="w-64 pl-10 pr-4 py-2 bg-slate-700/50 text-white placeholder-slate-400 rounded-lg border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   value={searchQuery}
                   onChange={handleSearch}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
                 />
-              </div>
-              <AnimatePresence>
-                {searchResults.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-lg shadow-lg border border-slate-700 overflow-hidden"
-                  >
-                    {searchResults.map((result) => (
-                      <Link
-                        key={result._id}
-                        to={`/blog/${result.slug}`}
-                        onClick={() => setSearchQuery("")}
-                        className="block px-4 py-3 hover:bg-slate-700/50 border-b border-slate-700/50 last:border-0"
-                      >
-                        <h3 className="font-medium text-white">{result.title}</h3>
-                        <p className="text-sm text-slate-400 mt-1 line-clamp-2">{result.excerpt}</p>
-                      </Link>
-                    ))}
-                  </motion.div>
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  </div>
                 )}
-              </AnimatePresence>
+              </div>
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchResults.length > 0 && (
+                <div className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-lg shadow-lg border border-slate-700 overflow-hidden z-50">
+                  {searchResults.map((result) => (
+                    <Link
+                      key={result._id}
+                      to={`/blog/${result.slug}`}
+                      onClick={handleResultClick}
+                      className="block px-4 py-3 hover:bg-slate-700/50 border-b border-slate-700/50 last:border-0 transition-colors"
+                    >
+                      <h3 className="font-medium text-white">{result.title}</h3>
+                      <p className="text-sm text-slate-400 mt-1 line-clamp-2">{result.excerpt}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* No Results */}
+              {showSearchResults && searchResults.length === 0 && debouncedQuery && !isSearching && (
+                <div className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 z-50">
+                  <p className="text-slate-400 text-center">No blogs found for "{debouncedQuery}"</p>
+                </div>
+              )}
             </div>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg bg-slate-700/50 text-white hover:bg-slate-600/50 transition-all duration-200"
+            >
+              {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t border-slate-700/50"
-          >
-            <div className="px-4 py-3 space-y-3">
-              {/* Mobile Search */}
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search blogs..."
-                  className="w-full pl-10 pr-4 py-2 bg-slate-700/50 text-white placeholder-slate-400 rounded-lg border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={searchQuery}
-                  onChange={handleSearch}
-                />
-              </div>
-
-              {/* Mobile Navigation */}
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md text-slate-300 hover:text-white hover:bg-slate-700/50"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.icon}
-                  <span>{link.name}</span>
-                  {link.badge && (
-                    <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      {link.badge}
-                    </span>
-                  )}
-                </Link>
-              ))}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-t border-slate-700/50">
+          <div className="px-4 py-3 space-y-3">
+            {/* Mobile Search */}
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search blogs..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-700/50 text-white placeholder-slate-400 rounded-lg border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchQuery}
+                onChange={handleSearch}
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                </div>
+              )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Mobile Menu Toggle */}
-      <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="lg:hidden fixed top-4 right-4 p-2 rounded-lg bg-slate-700/50 text-white hover:bg-slate-600/50 transition-all duration-200"
-      >
-        {mobileMenuOpen ? <FaTimes /> : <FaBars />}
-      </button>
+            {/* Mobile Search Results */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="bg-slate-700/50 rounded-lg p-2 space-y-2 max-h-60 overflow-y-auto">
+                {searchResults.map((result) => (
+                  <Link
+                    key={result._id}
+                    to={`/blog/${result.slug}`}
+                    onClick={() => {
+                      handleResultClick();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="block p-2 hover:bg-slate-600/50 rounded transition-colors"
+                  >
+                    <h3 className="font-medium text-white text-sm">{result.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">{result.excerpt}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Mobile Navigation */}
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.path}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md text-slate-300 hover:text-white hover:bg-slate-700/50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.icon}
+                <span>{link.name}</span>
+                {link.badge && (
+                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                    {link.badge}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

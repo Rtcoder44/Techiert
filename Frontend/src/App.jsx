@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect } from "react";
 import {
-  BrowserRouter as Router,
+  BrowserRouter,
   Routes,
   Route,
   Navigate,
@@ -91,7 +91,12 @@ const AppContent = () => {
   if (loading) return <Spinner />;
 
   return (
-    <Router>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <ScrollToTop />
       <Suspense fallback={<Spinner />}>
         <Routes>
@@ -215,7 +220,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-    </Router>
+    </BrowserRouter>
   );
 };
 

@@ -3,7 +3,6 @@ import axios from "axios";
 import { useAuth } from "../../context/authContext";
 import ProductEditModal from "./productEditModal";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
 import { showNotification, showAuthError, showErrorMessage } from '../../utils/notification';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -18,12 +17,7 @@ const ProductRow = memo(({ product, onDelete, onEdit, isDeleting, user }) => {
   };
 
   return (
-    <motion.tr
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
+    <tr
       className="border bg-white hover:bg-gray-50 transition-all duration-300"
     >
       <td className="border p-4">
@@ -88,10 +82,8 @@ const ProductRow = memo(({ product, onDelete, onEdit, isDeleting, user }) => {
               title="Delete Product"
             >
               {isDeleting ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-[18px] h-[18px] border-2 border-red-600 border-t-transparent rounded-full"
+                <div
+                  className="w-[18px] h-[18px] border-2 border-red-600 border-t-transparent rounded-full animate-spin"
                 />
               ) : (
                 <FaTrash size={18} />
@@ -100,7 +92,7 @@ const ProductRow = memo(({ product, onDelete, onEdit, isDeleting, user }) => {
           )}
         </div>
       </td>
-    </motion.tr>
+    </tr>
   );
 });
 
@@ -174,18 +166,16 @@ const ProductTable = ({ products, setProducts, onRefresh }) => {
               </tr>
             </thead>
             <tbody>
-              <AnimatePresence>
-                {productList.map((product) => (
-                  <ProductRow
-                    key={product._id}
-                    product={product}
-                    onDelete={handleDelete}
-                    onEdit={handleEdit}
-                    isDeleting={deletingProducts.has(product._id)}
-                    user={user}
-                  />
-                ))}
-              </AnimatePresence>
+              {productList.map((product) => (
+                <ProductRow
+                  key={product._id}
+                  product={product}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  isDeleting={deletingProducts.has(product._id)}
+                  user={user}
+                />
+              ))}
             </tbody>
           </table>
         )}

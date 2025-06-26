@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { FaSpinner, FaPlus, FaMapMarkerAlt, FaUser, FaPhone, FaHome, FaCity, FaGlobe, FaCheck, FaEdit } from 'react-icons/fa';
 import axios from 'axios';
 import { useAuth } from '../../context/authContext';
@@ -201,12 +200,7 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Shipping Address</h2>
@@ -223,10 +217,8 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
           
           <div className="grid gap-4">
             {addresses.map((address) => (
-              <motion.div
+              <div
                 key={address._id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
                 className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
                   selectedAddressId === address._id && !showNewAddressForm
                     ? 'border-blue-500 bg-blue-50'
@@ -268,7 +260,7 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -287,281 +279,274 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
       </div>
 
       {/* New Address Form */}
-      <AnimatePresence>
-        {showNewAddressForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-gray-50 rounded-lg p-6"
-          >
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FaEdit className="mr-2 text-blue-600" />
-              New Address
-            </h3>
+      {showNewAddressForm && (
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <FaEdit className="mr-2 text-blue-600" />
+            New Address
+          </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Name and Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number *
-                  </label>
-                  <div className="relative">
-                    <FaPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="tel"
-                      id="phoneNumber"
-                      name="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="10-digit mobile number"
-                      maxLength="10"
-                    />
-                  </div>
-                  {errors.phoneNumber && (
-                    <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Email */}
-              {!user && (
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email<span className="text-red-500">*</span></label>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    autoComplete="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.email ? 'border-red-500' : ''}`}
-                    required
-                  />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                </div>
-              )}
-
-              {/* Address Line 1 */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name and Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700 mb-1">
-                  Address Line 1 *
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name *
                 </label>
                 <div className="relative">
-                  <FaHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    id="addressLine1"
-                    name="addressLine1"
-                    value={formData.addressLine1}
+                    id="name"
+                    name="name"
+                    value={formData.name}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                      errors.addressLine1 ? 'border-red-500' : 'border-gray-300'
+                      errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="House/Flat number, Street name"
+                    placeholder="Enter your full name"
                   />
                 </div>
-                {errors.addressLine1 && (
-                  <p className="mt-1 text-sm text-red-600">{errors.addressLine1}</p>
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
                 )}
               </div>
 
-              {/* Address Line 2 */}
               <div>
-                <label htmlFor="addressLine2" className="block text-sm font-medium text-gray-700 mb-1">
-                  Address Line 2 (Optional)
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number *
                 </label>
                 <div className="relative">
-                  <FaHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <FaPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
-                    type="text"
-                    id="addressLine2"
-                    name="addressLine2"
-                    value={formData.addressLine2}
+                    type="tel"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Apartment, suite, etc. (optional)"
-                  />
-                </div>
-              </div>
-
-              {/* City and State */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                    City *
-                  </label>
-                  <div className="relative">
-                    <FaCity className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.city ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter city name"
-                    />
-                  </div>
-                  {errors.city && (
-                    <p className="mt-1 text-sm text-red-600">{errors.city}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                    State *
-                  </label>
-                  <div className="relative">
-                    <FaGlobe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.state ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter state name"
-                    />
-                  </div>
-                  {errors.state && (
-                    <p className="mt-1 text-sm text-red-600">{errors.state}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Postal Code and Country */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-1">
-                    Postal Code *
-                  </label>
-                  <input
-                    type="text"
-                    id="postalCode"
-                    name="postalCode"
-                    value={formData.postalCode}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                      errors.postalCode ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="6-digit postal code"
-                    maxLength="6"
+                    placeholder="10-digit mobile number"
+                    maxLength="10"
                   />
-                  {errors.postalCode && (
-                    <p className="mt-1 text-sm text-red-600">{errors.postalCode}</p>
-                  )}
                 </div>
-
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                    Country *
-                  </label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    <option value="India">India</option>
-                    <option value="United States">United States</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Australia">Australia</option>
-                    <option value="Germany">Germany</option>
-                    <option value="France">France</option>
-                    <option value="Japan">Japan</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
+                {errors.phoneNumber && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+                )}
               </div>
+            </div>
 
-              {/* Default Address Checkbox */}
-              {user && (
-                <div className="flex items-center">
+            {/* Email */}
+            {!user && (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email<span className="text-red-500">*</span></label>
+                <input
+                  type="email"
+                  name="email"
+                  id="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.email ? 'border-red-500' : ''}`}
+                  required
+                />
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              </div>
+            )}
+
+            {/* Address Line 1 */}
+            <div>
+              <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700 mb-1">
+                Address Line 1 *
+              </label>
+              <div className="relative">
+                <FaHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  id="addressLine1"
+                  name="addressLine1"
+                  value={formData.addressLine1}
+                  onChange={handleChange}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    errors.addressLine1 ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="House/Flat number, Street name"
+                />
+              </div>
+              {errors.addressLine1 && (
+                <p className="mt-1 text-sm text-red-600">{errors.addressLine1}</p>
+              )}
+            </div>
+
+            {/* Address Line 2 */}
+            <div>
+              <label htmlFor="addressLine2" className="block text-sm font-medium text-gray-700 mb-1">
+                Address Line 2 (Optional)
+              </label>
+              <div className="relative">
+                <FaHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  id="addressLine2"
+                  name="addressLine2"
+                  value={formData.addressLine2}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Apartment, suite, etc. (optional)"
+                />
+              </div>
+            </div>
+
+            {/* City and State */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                  City *
+                </label>
+                <div className="relative">
+                  <FaCity className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
-                    type="checkbox"
-                    id="isDefault"
-                    name="isDefault"
-                    checked={formData.isDefault}
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
                     onChange={handleChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      errors.city ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter city name"
                   />
-                  <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-700">
-                    Set as default address
-                  </label>
                 </div>
-              )}
-
-              {/* Submit Error */}
-              {errors.submit && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-600">{errors.submit}</p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading || savingAddress}
-                  className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  {loading || savingAddress ? (
-                    <>
-                      <FaSpinner className="animate-spin mr-2" />
-                      {savingAddress ? 'Saving Address...' : 'Processing...'}
-                    </>
-                  ) : (
-                    'Continue to Payment'
-                  )}
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  disabled={loading || savingAddress}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  Back
-                </button>
+                {errors.city && (
+                  <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+                )}
               </div>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              <div>
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                  State *
+                </label>
+                <div className="relative">
+                  <FaGlobe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      errors.state ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter state name"
+                  />
+                </div>
+                {errors.state && (
+                  <p className="mt-1 text-sm text-red-600">{errors.state}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Postal Code and Country */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-1">
+                  Postal Code *
+                </label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    errors.postalCode ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="6-digit postal code"
+                  maxLength="6"
+                />
+                {errors.postalCode && (
+                  <p className="mt-1 text-sm text-red-600">{errors.postalCode}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                  Country *
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="India">India</option>
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="Japan">Japan</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Default Address Checkbox */}
+            {user && (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isDefault"
+                  name="isDefault"
+                  checked={formData.isDefault}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-700">
+                  Set as default address
+                </label>
+              </div>
+            )}
+
+            {/* Submit Error */}
+            {errors.submit && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{errors.submit}</p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <button
+                type="submit"
+                disabled={loading || savingAddress}
+                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {loading || savingAddress ? (
+                  <>
+                    <FaSpinner className="animate-spin mr-2" />
+                    {savingAddress ? 'Saving Address...' : 'Processing...'}
+                  </>
+                ) : (
+                  'Continue to Payment'
+                )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={loading || savingAddress}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                Back
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Use Selected Address Button */}
       {selectedAddressId && !showNewAddressForm && (
@@ -592,7 +577,7 @@ const AddressForm = ({ onSubmit, onCancel, loading = false }) => {
           </button>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

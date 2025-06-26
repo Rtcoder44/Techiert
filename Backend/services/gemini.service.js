@@ -11,29 +11,7 @@ async function generateProductDetails(title, description) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are an expert e-commerce copywriter. Your goal is to create compelling, human-like, and SEO-friendly product descriptions that are not detectable as AI-generated. The tone should be enthusiastic and helpful.
-
-    Given the following product information:
-    Product Title: "${title}"
-    Product Description: "${description}"
-
-    Generate the following sections, formatted in Markdown:
-    ### ✨ Product Overview
-    (An engaging and detailed description of the product. Highlight its key features and what makes it special. Use emojis to make it more appealing.)
-
-    ### 🚀 How to Use
-    (Clear, step-by-step instructions on how to use the product. If it's a simple product, explain its various applications. Use emojis where appropriate.)
-
-    ### 💖 Why You'll Love It
-    (A bulleted list of the top 3-5 reasons why a customer should buy this product. Focus on benefits, not just features. Start each bullet point with a '*' and use emojis.)
-
-    Ensure the content is:
-    - Original and plagiarism-free.
-    - Easy to read: Use short paragraphs, headings, and bullet points.
-    - Engaging and persuasive.
-    - Sounds like it was written by a human expert.
-
-    Do not include any introductory or concluding remarks like "Here is the content you requested". Just provide the content for the three sections.`;
+    const prompt = `You are an expert e-commerce copywriter.\n\nWrite a unique, humanized, SEO-optimized, and plagiarism-free product description for the following product.\n\n- The content must be original, not copied from any source, and should pass AI detection tools.\n- Write in a natural, conversational, and helpful tone, as if you are a real person who has used the product.\n- Avoid generic phrases and AI-sounding language.\n- Use varied sentence structures, idioms, and natural transitions.\n- Include relevant keywords for Google SEO, but do not keyword-stuff.\n- Follow Google's E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) guidelines.\n- Make sure the information is accurate, useful, and helpful for real customers.\n- Do not use any AI disclaimers or robotic language.\n- Format the content in Markdown with the following sections:\n  - ### ✨ Product Overview\n  - ### 🚀 How to Use\n  - ### 💖 Why You'll Love It\n\nGiven the following product information:\nProduct Title: "${title}"\nProduct Description: "${description}"`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

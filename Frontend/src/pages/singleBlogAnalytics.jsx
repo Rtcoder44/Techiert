@@ -2,20 +2,11 @@ import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { useParams, useLocation } from "react-router-dom";
 import { Card, CardContent } from "../components/AnalyticsComponents/cards";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
+import LightweightChart from "../components/AnalyticsComponents/LightweightChart";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../context/authContext";
-import { motion } from "framer-motion";
 import { pageview } from "../utils/gtag";
-import DashboardLayout from "../components/dashboard/dashboardLayout";  // Assuming you have a DashboardLayout component
+import DashboardLayout from "../components/dashboard/dashboardLayout";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -105,13 +96,9 @@ const SingleBlogAnalytics = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-8 bg-[#F1F5F9] min-h-screen">
-        <motion.h1
-          className="text-3xl font-bold text-[#1E293B]"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <h1 className="text-3xl font-bold text-[#1E293B] animate-fade-in">
           📊 Blog Analytics
-        </motion.h1>
+        </h1>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -154,14 +141,9 @@ const SingleBlogAnalytics = () => {
         ) : (
           <>
             {/* Metric Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 stagger-container">
               {metricCards.map((metric, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
+                <div key={idx} className="animate-stagger-item">
                   <Card className="bg-white rounded-2xl p-4 text-center shadow-md hover:shadow-xl transition-shadow">
                     <CardContent>
                       <p className="text-sm text-gray-600">{metric.label}</p>
@@ -170,12 +152,12 @@ const SingleBlogAnalytics = () => {
                       </h2>
                     </CardContent>
                   </Card>
-                </motion.div>
+                </div>
               ))}
             </div>
 
             {/* Blog Details */}
-            <div className="bg-white rounded-2xl p-6 shadow-md mt-8">
+            <div className="bg-white rounded-2xl p-6 shadow-md mt-8 animate-fade-in">
               <h3 className="text-xl font-semibold text-[#1E293B]">Blog Details</h3>
               <div className="mt-4">
                 <p className="text-sm text-gray-600"><strong>Title:</strong> {analytics?.blog?.title}</p>
@@ -183,52 +165,28 @@ const SingleBlogAnalytics = () => {
             </div>
 
             {/* Line Chart */}
-            <motion.div
-              className="bg-white rounded-2xl shadow-md p-6 mt-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
+            <div className="bg-white rounded-2xl shadow-md p-6 mt-8 animate-fade-in">
               <h3 className="text-lg font-semibold text-[#1E293B] mb-4">
                 📈 Daily Views Trend
               </h3>
 
               {filteredViews.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={filteredViews}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="_id" />
-                    <YAxis
-                      allowDecimals={false}
-                      label={{
-                        value: "Views",
-                        angle: -90,
-                        position: "insideLeft",
-                      }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#fff",
-                        border: "1px solid #ccc",
-                        borderRadius: "8px",
-                        fontSize: "0.875rem",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="count"
-                      stroke="#E7000B"
-                      strokeWidth={3}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <LightweightChart
+                  data={filteredViews.map(item => ({
+                    label: new Date(item._id).toLocaleDateString(),
+                    value: item.count
+                  }))}
+                  type="line"
+                  title=""
+                  color="#E7000B"
+                  height={300}
+                />
               ) : (
-                <p className="text-center text-gray-500 py-10">
-                  No view data available to display.
-                </p>
+                <div className="text-center text-gray-500 py-8">
+                  No view data available for the selected time range.
+                </div>
               )}
-            </motion.div>
+            </div>
           </>
         )}
       </div>

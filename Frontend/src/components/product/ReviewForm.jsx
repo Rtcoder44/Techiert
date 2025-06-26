@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { FaStar, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -35,17 +34,8 @@ const ReviewForm = ({ productId, onClose, onSubmitSuccess }) => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black bg-opacity-50"
-    >
-      <motion.div
-        initial={{ scale: 0.95 }}
-        animate={{ scale: 1 }}
-        className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Write a Review</h3>
           <button
@@ -123,8 +113,8 @@ const ReviewForm = ({ productId, onClose, onSubmitSuccess }) => {
             </button>
           </div>
         </form>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 

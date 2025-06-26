@@ -1,6 +1,5 @@
 import React from "react";
 import DashboardLayout from "../../components/dashboard/dashboardLayout";
-import { motion } from "framer-motion";
 import { FaBullseye, FaHandshake, FaRocket, FaGithub, FaLinkedin } from "react-icons/fa";
 
 const About = () => {
@@ -8,26 +7,21 @@ const About = () => {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto px-6 py-12 text-gray-800">
         {/* Header */}
-        <motion.h1
-          className="text-4xl font-bold text-center text-[#1E293B] mb-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+        <h1
+          className="text-4xl font-bold text-center text-[#1E293B] mb-6 animate-slide-in-bottom"
         >
           About Techiert
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          className="text-center text-gray-600 mb-12 text-lg max-w-2xl mx-auto"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+        <p
+          className="text-center text-gray-600 mb-12 text-lg max-w-2xl mx-auto animate-fade-in"
+          style={{ animationDelay: '0.3s' }}
         >
           At Techiert, we're passionate about technology, sharing knowledge, and helping users stay updated with the latest in tech. Our platform is designed for tech enthusiasts, learners, and professionals alike.
-        </motion.p>
+        </p>
 
         {/* Mission, Vision, Promise */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 stagger-container">
           {[
             {
               title: "Our Mission",
@@ -45,28 +39,20 @@ const About = () => {
               text: "Community-first, user-centric, and always evolving with tech.",
             },
           ].map((item, index) => (
-            <motion.div
+            <div
               key={index}
-              className="bg-white shadow-md rounded-xl p-6 text-center"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.2 }}
-              viewport={{ once: true }}
+              className="bg-white shadow-md rounded-xl p-6 text-center animate-stagger-item"
             >
               {item.icon}
               <h3 className="text-xl font-semibold text-[#1E293B] mb-2">{item.title}</h3>
               <p className="text-gray-600">{item.text}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
 
         {/* About Me Section */}
-        <motion.div
-          className="mt-20 bg-white shadow-xl rounded-3xl p-8 max-w-4xl mx-auto text-center border border-blue-100"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
+        <div
+          className="mt-20 bg-white shadow-xl rounded-3xl p-8 max-w-4xl mx-auto text-center border border-blue-100 animate-slide-in-bottom"
         >
           <img
             src="https://res.cloudinary.com/dj6zyomvw/image/upload/t_Profile/v1744828679/IMG_20220209_230501_795_o3o3hp.png"
@@ -76,15 +62,13 @@ const About = () => {
           <h2 className="text-2xl font-extrabold text-[#1E293B]">Ritik Gupta</h2>
           <p className="text-gray-600 text-sm mb-4">Founder • Full Stack Developer • Tech Blogger</p>
 
-          <motion.p
-            className="text-gray-700 mb-6 leading-relaxed"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+          <p
+            className="text-gray-700 mb-6 leading-relaxed animate-fade-in"
+            style={{ animationDelay: '0.2s' }}
           >
             Hey! I'm Ritik — a passionate full stack developer and the founder of <strong>Techiert.com</strong>. I love building meaningful digital products, especially ones that empower and educate.
             Techiert is my brainchild, built from the ground up using the <strong>MERN</strong> stack and a deep desire to share knowledge with a growing tech community.
-          </motion.p>
+          </p>
 
           {/* Tech Stack */}
           <h3 className="font-semibold text-[#1E293B] text-lg mb-3">Tech Stack I Work With 💻</h3>
@@ -138,14 +122,13 @@ const About = () => {
             </a>
           </div>
 
-          <motion.a
+          <a
             href="/contact"
-            className="mt-8 inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-700 transition"
-            whileHover={{ scale: 1.05 }}
+            className="mt-8 inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-700 transition hover:scale-105"
           >
             Hire Me
-          </motion.a>
-        </motion.div>
+          </a>
+        </div>
 
         <div className="mt-16 text-center text-gray-500 text-sm">
           <strong>Shop with Confidence:</strong> All payments on Techiert.com are processed securely via trusted payment gateways. Your privacy and security are our top priorities.<br/>

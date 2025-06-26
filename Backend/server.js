@@ -4,13 +4,23 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const compression = require('compression');
 const helmet = require('helmet');
+const path = require('path');
 require("dotenv").config();
 
 
 const { setCache, getCache } = require("./utils/redisClient");
 const Blog = require("./models/blogs.model");
 
+// Canonical domain redirect (www to non-www)
+const canonicalRedirect = (req, res, next) => {
+  if (req.headers.host && req.headers.host.startsWith('www.')) {
+    return res.redirect(301, 'https://' + req.headers.host.replace(/^www\./, '') + req.url);
+  }
+  next();
+};
+
 const app = express();
+app.use(canonicalRedirect);
 
 // Middleware
 app.use(express.json());
@@ -72,6 +82,14 @@ app.use("/api/orders", orderRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/', sitemapRoutes);
+
+// Serve static files from the frontend build (if deployed together)
+app.use(express.static(path.join(__dirname, '../Frontend/dist')));
+
+// Serve index.html for all non-API, non-static routes (React SPA support)
+app.get(/^\/(?!api|sitemap\.xml|robots\.xml|favicon\.ico|static|assets).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
+});
 
 // MongoDB Connection
 mongoose

@@ -4,7 +4,7 @@ import HighlightCard from "../components/AnalyticsComponents/HighlightCard";
 import ViewsChart from "../components/AnalyticsComponents/viewChart";
 import BlogsBarChart from "../components/AnalyticsComponents/blogsBarChart";
 import FilterComponent from "../components/AnalyticsComponents/filterComponent";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import LightweightChart from "../components/AnalyticsComponents/LightweightChart";
 import { useAuth } from "../context/authContext";
 import { pageview, event } from "../utils/gtag";
 import DashboardLayout from "../components/dashboard/dashboardLayout";
@@ -111,30 +111,26 @@ const AnalyticsPage = () => {
         {/* Referrers and Search Queries */}
         <h2 className="text-2xl font-semibold text-[#1E293B] mb-6">🌐 Referrers & Search Queries</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-white p-6 rounded-2xl shadow">
-            <h3 className="text-lg font-bold mb-4 text-[#0F172A]">Top Referrers</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={data?.topReferrers || []}>
-                <XAxis dataKey="referrer" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#60A5FA" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <LightweightChart
+            data={data?.topReferrers?.map(item => ({
+              label: item.referrer,
+              value: item.count
+            })) || []}
+            type="bar"
+            title="Top Referrers"
+            color="#60A5FA"
+            height={250}
+          />
           <div className="bg-white p-6 rounded-2xl shadow">
             <h3 className="text-lg font-bold mb-4 text-[#0F172A]">Top Search Queries</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie data={data?.topSearchQueries || []} dataKey="count" nameKey="query" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
-                  {data?.topSearchQueries?.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="space-y-3">
+              {data?.topSearchQueries?.slice(0, 8).map((query, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <span className="text-sm text-gray-700 truncate">{query.query}</span>
+                  <span className="text-sm font-semibold text-blue-600">{query.count}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

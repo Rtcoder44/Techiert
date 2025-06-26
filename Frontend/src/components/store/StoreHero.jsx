@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { FaSearch } from 'react-icons/fa';
 
 const StoreHero = ({ searchValue, onSearchChange }) => {
@@ -15,27 +14,20 @@ const StoreHero = ({ searchValue, onSearchChange }) => {
       </div>
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
         <div className="text-white max-w-3xl">
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-5xl font-bold mb-6"
+          <h1 
+            className="text-5xl font-bold mb-6 animate-slide-in-bottom"
           >
             Your Tech Shopping Destination
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-xl mb-8"
+          </h1>
+          <p 
+            className="text-xl mb-8 animate-slide-in-bottom"
+            style={{ animationDelay: '0.2s' }}
           >
             Discover the latest in technology and electronics
-          </motion.p>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="max-w-xl relative"
+          </p>
+          <div 
+            className="max-w-xl relative animate-slide-in-bottom"
+            style={{ animationDelay: '0.4s' }}
           >
             <input
               type="text"
@@ -45,7 +37,7 @@ const StoreHero = ({ searchValue, onSearchChange }) => {
               className="w-full pl-12 pr-4 py-4 rounded-full text-gray-900 focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             />
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

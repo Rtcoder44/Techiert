@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { FaStar, FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
 import { useCurrency } from '../../context/currencyContext';
 
@@ -11,9 +10,8 @@ const ProductCard = ({ product, isWishlisted, onToggleWishlist, onAddToCart, isF
   const priceToFormat = selectedVariant ? selectedVariant.price.amount : product.price;
 
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 ${
+    <div
+      className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 hover-lift ${
         isFeatured ? 'border-2 border-blue-200' : ''
       }`}
     >
@@ -85,7 +83,7 @@ const ProductCard = ({ product, isWishlisted, onToggleWishlist, onAddToCart, isF
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

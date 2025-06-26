@@ -3,7 +3,7 @@ const Product = require('../models/product.model');
 const Blog = require('../models/blogs.model');
 const shopifyService = require('../services/shopify.service'); // Import Shopify Service
 const gemini = require('../services/gemini.service'); // Import Gemini service
-const BASE_URL = process.env.BASE_URL || 'https://techiert.com';
+const BASE_URL = 'https://techiert.com';
 
 // Controller to generate robots.txt
 exports.getRobotsTxt = (req, res) => {
@@ -20,7 +20,7 @@ Sitemap: https://techiert.com/sitemap.xml`
 // Controller to generate a complete sitemap
 exports.generateSitemap = async (req, res) => {
   try {
-    const smStream = new SitemapStream({ hostname: 'https://techiert.com' });
+    const smStream = new SitemapStream({ hostname: BASE_URL });
 
     // Static pages
     smStream.write({ url: '/', changefreq: 'daily', priority: 1.0 });
@@ -42,7 +42,7 @@ exports.generateSitemap = async (req, res) => {
           }
         }
         smStream.write({
-          url: `/store/product/${product.handle}`,
+          url: BASE_URL + `/store/product/${product.handle}`,
           changefreq: 'weekly',
           priority: 0.9,
         });
@@ -54,7 +54,7 @@ exports.generateSitemap = async (req, res) => {
     localProducts.forEach(product => {
       if (product.slug && product.title && product.description) {
         smStream.write({
-          url: `/store/product/${product.slug}`,
+          url: BASE_URL + `/store/product/${product.slug}`,
           changefreq: 'weekly',
           priority: 0.9,
           lastmod: product.updatedAt,
@@ -67,7 +67,7 @@ exports.generateSitemap = async (req, res) => {
     blogs.forEach(blog => {
       if (blog.slug && blog.title && blog.content) {
         smStream.write({
-          url: `/blog/${blog.slug}`,
+          url: BASE_URL + `/blog/${blog.slug}`,
           changefreq: 'weekly',
           priority: 0.7,
           lastmod: blog.updatedAt,
