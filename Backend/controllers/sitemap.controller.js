@@ -49,20 +49,7 @@ exports.generateSitemap = async (req, res) => {
       }
     }
 
-    // 2. Add Local DB Products (if any, ensures legacy products are included)
-    const localProducts = await Product.find({}, 'slug updatedAt title description').lean();
-    localProducts.forEach(product => {
-      if (product.slug && product.title && product.description) {
-        smStream.write({
-          url: BASE_URL + `/store/product/${product.slug}`,
-          changefreq: 'weekly',
-          priority: 0.9,
-          lastmod: product.updatedAt,
-        });
-      }
-    });
-
-    // 3. Add Blogs
+    // 2. Add Blogs
     const blogs = await Blog.find({}, 'slug updatedAt title content').lean();
     blogs.forEach(blog => {
       if (blog.slug && blog.title && blog.content) {
