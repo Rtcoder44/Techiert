@@ -143,6 +143,21 @@ exports.createProduct = async (req, res) => {
       }
     }
 
+    // Ensure unique SKU to satisfy existing unique index in DB
+    let sku = (req.body && req.body.sku ? String(req.body.sku).trim() : '') ||
+      `${slugify(title, { lower: true, strict: true }).toUpperCase().slice(0, 8)}-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+    // Make sure SKU is unique
+    // If collision (very unlikely), retry with a new suffix
+    // Limit attempts to avoid infinite loop
+    let attempts = 0;
+    while (attempts < 3) {
+      // eslint-disable-next-line no-await-in-loop
+      const exists = await Product.findOne({ sku });
+      if (!exists) break;
+      attempts += 1;
+      sku = `${slug.toUpperCase().slice(0, 8)}-${(Date.now() + attempts).toString(36).toUpperCase().slice(-4)}`;
+    }
+
     const product = await Product.create({
       title,
       slug,
@@ -153,6 +168,7 @@ exports.createProduct = async (req, res) => {
       specifications: specificationsData,
       images,
       affiliateUrl: affiliateUrl || '',
+      sku,
       createdBy: req.user._id,
       aiContent,
     });

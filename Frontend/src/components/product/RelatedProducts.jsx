@@ -6,7 +6,7 @@ import { useCurrency } from '../../context/currencyContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const RelatedProducts = ({ productSlug, currentProductId }) => {
+const RelatedProducts = ({ productSlug, currentProductId, currentCategoryId }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { formatPrice } = useCurrency();
@@ -15,12 +15,10 @@ const RelatedProducts = ({ productSlug, currentProductId }) => {
     const fetchRelatedProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/api/products`, {
-          params: {
-            exclude: currentProductId,
-            limit: 4
-          }
-        });
+        const params = { exclude: currentProductId, limit: 4 };
+        if (currentCategoryId) params.category = currentCategoryId;
+
+        const response = await axios.get(`${API_BASE_URL}/api/products`, { params });
         setProducts(response.data.products || []);
       } catch (error) {
         console.error('Error fetching related products:', error);
@@ -33,7 +31,7 @@ const RelatedProducts = ({ productSlug, currentProductId }) => {
     if (currentProductId) {
       fetchRelatedProducts();
     }
-  }, [currentProductId]);
+  }, [currentProductId, currentCategoryId]);
 
   if (loading) {
     return (
@@ -66,13 +64,15 @@ const RelatedProducts = ({ productSlug, currentProductId }) => {
             to={`/store/product/${product.slug}`}
             className="group"
           >
-            <div className="aspect-w-1 aspect-h-1 w-full rounded-lg overflow-hidden">
+            <div className="relative w-full pb-[100%] rounded-lg overflow-hidden bg-white ring-1 ring-gray-100">
               <img
-                src={product.images && product.images.length > 0 ? product.images[0] : '/default-product.jpg'}
+                src={(Array.isArray(product.images) && product.images.length > 0) ? (product.images[0]?.url || product.images[0]?.src || product.images[0]) : '/default-product.jpg'}
                 alt={product.title}
-                className="w-full h-full object-center object-cover group-hover:opacity-75 transition-opacity"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
-                  e.target.src = '/default-product.jpg';
+                  e.currentTarget.src = '/default-product.jpg';
                 }}
               />
             </div>

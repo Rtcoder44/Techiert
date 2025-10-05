@@ -403,6 +403,7 @@ const SingleProduct = () => {
           <RelatedProducts
             productSlug={product.slug}
             currentProductId={product._id}
+            currentCategoryId={product.category?._id || product.category}
           />
         </div>
       </DashboardLayout>

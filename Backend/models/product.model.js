@@ -21,6 +21,12 @@ const reviewSchema = new mongoose.Schema({
 });
 
 const productSchema = new mongoose.Schema({
+  sku: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
   title: {
     type: String,
     required: true,
@@ -103,6 +109,7 @@ productSchema.pre('save', function(next) {
 });
 
 productSchema.index({ slug: 1 });
+productSchema.index({ sku: 1 }, { unique: true });
 productSchema.index({ updatedAt: -1 });
 
 const aiProductContentSchema = new mongoose.Schema({
