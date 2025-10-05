@@ -6,7 +6,17 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Helper function to get cart from localStorage
 const getLocalCart = () => {
   try {
-    return JSON.parse(localStorage.getItem('guestCart')) || { items: [], total: 0 };
+    const raw = JSON.parse(localStorage.getItem('guestCart')) || { items: [], total: 0 };
+    // Ensure affiliateUrl survives older entries missing it
+    if (Array.isArray(raw.items)) {
+      raw.items = raw.items.map(item => {
+        if (item && item.product) {
+          item.product.affiliateUrl = item.product.affiliateUrl || item.product?.product?.affiliateUrl || '';
+        }
+        return item;
+      });
+    }
+    return raw;
   } catch {
     return { items: [], total: 0 };
   }
@@ -30,7 +40,7 @@ const normalizeCartItem = (item) => {
   if (item.product) {
     let images = [];
     if (Array.isArray(item.product.images)) {
-      images = item.product.images.map(img => (img && (img.src || img.url)) ).filter(Boolean);
+      images = item.product.images.map(img => (typeof img === 'string' ? img : (img && (img.src || img.url))) ).filter(Boolean);
     } else if (item.product.image && (item.product.image.src || item.product.image.url)) {
       images = [item.product.image.src || item.product.image.url];
     }
@@ -47,7 +57,7 @@ const normalizeCartItem = (item) => {
   }
   let images = [];
   if (Array.isArray(item.images)) {
-    images = item.images.map(img => (img && (img.src || img.url)) ).filter(Boolean);
+    images = item.images.map(img => (typeof img === 'string' ? img : (img && (img.src || img.url))) ).filter(Boolean);
   } else if (item.image && (item.image.src || item.image.url)) {
     images = [item.image.src || item.image.url];
   }
@@ -63,22 +73,6 @@ const normalizeCartItem = (item) => {
   };
 };
 
-// Shopify-native checkout thunk
-export const createShopifyCheckout = createAsyncThunk(
-  'cart/createShopifyCheckout',
-  async ({ items }, { rejectWithValue }) => {
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/shopify/checkout`, {
-        items
-      }, {
-        withCredentials: true
-      });
-      return response.data; // { checkoutUrl }
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
 
 const cartSlice = createSlice({
   name: 'cart',
@@ -105,8 +99,8 @@ const cartSlice = createSlice({
       const { variantId, product, quantity } = action.payload;
       const existingItem = state.items.find(item => item.variantId === variantId);
       const images = Array.isArray(product.images)
-        ? product.images.map(img => img.src || img.url)
-        : [product.image?.src || product.image?.url];
+        ? product.images.map(img => img.src || img.url || img)
+        : [product.image?.src || product.image?.url].filter(Boolean);
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
@@ -117,6 +111,7 @@ const cartSlice = createSlice({
             title: product.title,
             price: parseFloat(product.price),
             images,
+            affiliateUrl: product.affiliateUrl,
             shopifyVariantId: variantId
           }
         });
@@ -158,18 +153,7 @@ const cartSlice = createSlice({
     }
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(createShopifyCheckout.pending, (state) => {
-        state.loading = true;
-        state.checkoutError = null;
-      })
-      .addCase(createShopifyCheckout.fulfilled, (state) => {
-        state.loading = false;
-      })
-      .addCase(createShopifyCheckout.rejected, (state, action) => {
-        state.checkoutError = action.payload?.message || 'Checkout failed';
-        state.loading = false;
-      });
+    // Add any future async thunks here
   }
 });
 

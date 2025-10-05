@@ -39,8 +39,8 @@ const MyOrders = () => {
       try {
         setLoading(true);
         if (user) {
-          // Fetch Shopify orders for logged-in user
-          const response = await axios.get(`${API_BASE_URL}/api/orders/shopify-orders`, {
+          // Fetch orders from database for logged-in user
+          const response = await axios.get(`${API_BASE_URL}/api/orders`, {
             withCredentials: true
           });
           setOrders(response.data.orders || []);

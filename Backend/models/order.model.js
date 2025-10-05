@@ -8,9 +8,8 @@ const orderSchema = new mongoose.Schema({
       return !this.guestEmail; // userId is required only if not a guest order
     }
   },
-  shopifyOrderId: {
+  orderId: {
     type: String,
-    required: true,
     unique: true
   },
   items: [{
@@ -34,15 +33,18 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
   shippingAddress: {
-    street: String,
+    fullName: String,
+    phone: String,
+    addressLine1: String,
+    addressLine2: String,
     city: String,
     state: String,
-    country: String,
-    zipCode: String
+    postalCode: String,
+    country: String
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+    enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
   },
   orderNumber: {
@@ -61,16 +63,12 @@ const orderSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid email address!`
     }
   },
-  email: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function(v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      },
-      message: props => `${props.value} is not a valid email address!`
-    }
-  }
+  paymentDetails: {
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    amount: Number
+  },
+  note: String
 }, {
   timestamps: true
 });

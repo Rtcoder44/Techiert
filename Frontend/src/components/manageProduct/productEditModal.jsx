@@ -7,26 +7,44 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ProductEditModal = ({ product, onClose, onUpdate }) => {
   const { user } = useAuth();
-  const [title, setTitle] = useState(product.title);
-  const [description, setDescription] = useState(product.description);
-  const [price, setPrice] = useState(product.price);
-  const [stock, setStock] = useState(product.stock);
-  const [category, setCategory] = useState(product.category._id || product.category);
-  const [specifications, setSpecifications] = useState(() => {
-    const specs = product.specifications || {};
-    return Object.entries(specs).map(([key, value]) => ({ key, value }));
-  });
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("");
+  const [category, setCategory] = useState("");
+  const [specifications, setSpecifications] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [affiliateUrl, setAffiliateUrl] = useState("");
+
+  // Prefill when product is provided
+  useEffect(() => {
+    if (!product) return;
+    setTitle(product.title || "");
+    setDescription(product.description || "");
+    setPrice(product.price ?? "");
+    setStock(product.stock ?? "");
+    const catValue = typeof product.category === 'object' ? (product.category?._id || "") : (product.category || "");
+    setCategory(catValue);
+    const specs = product.specifications || {};
+    const arr = Array.isArray(specs) ? specs : Object.entries(specs).map(([key, value]) => ({ key, value }));
+    setSpecifications(arr);
+    setAffiliateUrl(product.affiliateUrl || "");
+  }, [product]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/product-categories`);
-        setCategories(response.data);
+        const data = response?.data;
+        const list = Array.isArray(data)
+          ? data
+          : (Array.isArray(data?.categories) ? data.categories : []);
+        setCategories(list);
       } catch (error) {
         console.error('Error fetching categories:', error);
+        setCategories([]);
       }
     };
 
@@ -48,6 +66,7 @@ const ProductEditModal = ({ product, onClose, onUpdate }) => {
       formData.append("price", price);
       formData.append("stock", stock);
       formData.append("category", category);
+      formData.append("affiliateUrl", affiliateUrl);
       
       const specsForBackend = specifications.reduce((acc, spec) => {
         if (spec.key && spec.value) {
@@ -181,7 +200,8 @@ const ProductEditModal = ({ product, onClose, onUpdate }) => {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            {categories.map((cat) => (
+            <option value="" disabled>{categories.length ? 'Select a category' : 'No categories found'}</option>
+            {Array.isArray(categories) && categories.map((cat) => (
               <option key={cat._id} value={cat._id}>
                 {cat.name}
               </option>
@@ -222,6 +242,18 @@ const ProductEditModal = ({ product, onClose, onUpdate }) => {
           >
             + Add Specification
           </button>
+        </div>
+
+        {/* Affiliate URL */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Amazon Product URL</label>
+          <input
+            type="url"
+            className="w-full p-2 border rounded"
+            value={affiliateUrl}
+            onChange={(e) => setAffiliateUrl(e.target.value)}
+            placeholder="https://www.amazon.in/..."
+          />
         </div>
 
         {/* Images */}

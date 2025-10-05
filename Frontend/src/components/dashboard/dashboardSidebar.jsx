@@ -16,7 +16,8 @@ import {
   FaTags,
   FaShoppingCart,
   FaClipboardList,
-  FaBookmark
+  FaBookmark,
+  FaRobot
 } from "react-icons/fa";
 import { useAuth } from "../../context/authContext";
 import axios from "axios";
@@ -151,6 +152,11 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
               name: "Category Management",
               path: "/dashboard/manage-categories",
               icon: <FaTags className="text-xl" />,
+            },
+            {
+              name: "AI Blog Generator",
+              path: "/dashboard/ai-blog-generator",
+              icon: <FaRobot className="text-xl" />,
             }
           ],
         },

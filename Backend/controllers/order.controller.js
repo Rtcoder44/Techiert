@@ -1,7 +1,6 @@
 const Order = require('../models/order.model');
 const Cart = require('../models/cart.model');
 const Product = require('../models/product.model');
-const shopifyService = require('../services/shopify.service');
 const razorpayService = require('../services/razorpay.service');
 
 // Create order for authenticated user
@@ -235,33 +234,6 @@ exports.getGuestOrderByNumber = async (req, res) => {
   }
 };
 
-// Fetch Shopify orders by user email
-exports.getShopifyOrders = async (req, res) => {
-  try {
-    const email = req.user?.email;
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'User email not found.' });
-    }
-    const orders = await shopifyService.fetchOrdersByEmail(email);
-    res.status(200).json({ success: true, orders });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Fetch a single Shopify order by order number
-exports.getShopifyOrderByNumber = async (req, res) => {
-  try {
-    const { orderNumber } = req.params;
-    const order = await shopifyService.fetchOrderByNumber(orderNumber);
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found.' });
-    }
-    res.status(200).json({ success: true, order });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 // Create Razorpay order for INR payment
 exports.createRazorpayOrder = async (req, res) => {
@@ -284,118 +256,84 @@ exports.createRazorpayOrder = async (req, res) => {
   }
 };
 
-// Handle Razorpay payment success and create Shopify order
+// Handle Razorpay payment success and create order in database
 exports.handleRazorpaySuccess = async (req, res) => {
-  // Helper to extract numeric ID from Shopify GraphQL ID
-  function extractShopifyNumericId(graphqlId) {
-    if (typeof graphqlId !== 'string') return graphqlId;
-    const match = graphqlId.match(/\/(\d+)$/);
-    return match ? match[1] : graphqlId;
-  }
-
-  // Helper to format phone number for Shopify (international format)
-  function formatPhoneForShopify(phone) {
-    if (!phone) return '';
-    // Remove all non-digit characters
-    const digits = phone.replace(/\D/g, '');
-    // If it's a 10-digit Indian number, add +91 prefix
-    if (digits.length === 10) {
-      return `+91-${digits}`;
-    }
-    // If it already has country code, format it properly
-    if (digits.length === 12 && digits.startsWith('91')) {
-      return `+${digits.slice(0, 2)}-${digits.slice(2)}`;
-    }
-    // If it's already in international format, return as is
-    if (phone.startsWith('+')) {
-      return phone;
-    }
-    // Default: add +91 prefix
-    return `+91-${digits}`;
-  }
-
-  // Utility: Convert INR to USD (use same rate as frontend fallback)
-  function convertINRtoUSD(amountINR) {
-    const rate = 83.5; // Should match frontend fallback or be set in env/config
-    if (!amountINR || isNaN(amountINR)) return 0;
-    return (typeof amountINR === 'string' ? parseFloat(amountINR) : amountINR) / rate;
-  }
-
   try {
     const { order_id, payment_id, signature, cart, customer, shippingAddress, note } = req.body;
+    
     // 1. Verify payment signature
     const isValid = await razorpayService.verifySignature({ order_id, payment_id, signature });
     if (!isValid) {
       return res.status(400).json({ success: false, error: 'Invalid payment signature' });
     }
-    // 2. Create paid order in Shopify
-    const lineItems = cart.map(item => ({
-      variant_id: extractShopifyNumericId(item.variantId),
-      quantity: item.quantity,
-    }));
 
-    // Format customer data for Shopify
-    const formattedCustomer = {
-      ...customer,
-      phone: formatPhoneForShopify(customer.phone)
-    };
-
-    // Try to find existing Shopify customer by email or phone
-    let shopifyCustomer = null;
-    if (formattedCustomer.email || formattedCustomer.phone) {
-      shopifyCustomer = await shopifyService.findCustomerByEmailOrPhone({
-        email: formattedCustomer.email,
-        phone: formattedCustomer.phone
-      });
-    }
-
-    // If found, use their ID; otherwise, use the full customer object
-    let customerForOrder = formattedCustomer;
-    if (shopifyCustomer) {
-      customerForOrder = { id: shopifyCustomer.id };
-    }
-
-    // Format shipping address data for Shopify
-    const formattedShippingAddress = {
-      ...shippingAddress,
-      phone: formatPhoneForShopify(shippingAddress.phone)
-    };
-
-    // Debug logging
-    console.log('--- [Shopify] Order Creation Data ---');
-    console.log('Formatted Customer:', customerForOrder);
-    console.log('Formatted Shipping Address:', formattedShippingAddress);
-    console.log('Line Items:', lineItems);
-
-    // Validate required fields
-    const isNewCustomer = !customerForOrder.id;
-    if (isNewCustomer && (!customerForOrder.email || !customerForOrder.phone)) {
+    // 2. Validate required fields
+    if (!customer.email || !customer.phone) {
       return res.status(400).json({ 
         success: false, 
         error: 'Missing required customer information (email or phone)' 
       });
     }
 
-    if (!formattedShippingAddress.address1 || !formattedShippingAddress.city || !formattedShippingAddress.province) {
+    if (!shippingAddress.addressLine1 || !shippingAddress.city || !shippingAddress.state) {
       return res.status(400).json({ 
         success: false, 
         error: 'Missing required shipping address information' 
       });
     }
 
-    // Convert INR to USD for Shopify
-    const amountINR = req.body.amount;
-    const amountUSD = convertINRtoUSD(amountINR);
+    // 3. Get product details from database
+    const productIds = cart.map(item => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } });
 
-    const paymentDetails = { amount: amountINR, amount_usd: amountUSD, razorpayPaymentId: payment_id };
-    const shopifyOrder = await shopifyService.createPaidOrder({
-      lineItems,
-      customer: customerForOrder,
-      shippingAddress: formattedShippingAddress,
-      paymentDetails,
-      note,
+    if (products.length !== cart.length) {
+      return res.status(400).json({
+        success: false,
+        error: 'One or more products not found'
+      });
+    }
+
+    // 4. Create order items with validated product details
+    const orderItems = cart.map(item => {
+      const product = products.find(p => p._id.toString() === item.productId);
+      return {
+        productId: product._id,
+        quantity: item.quantity,
+        price: product.price
+      };
     });
-    res.json({ success: true, shopifyOrder });
+
+    // 5. Calculate total amount
+    const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // 6. Create order in database
+    const order = await Order.create({
+      items: orderItems,
+      totalAmount,
+      shippingAddress: {
+        fullName: shippingAddress.fullName,
+        phone: shippingAddress.phone,
+        addressLine1: shippingAddress.addressLine1,
+        addressLine2: shippingAddress.addressLine2 || '',
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        postalCode: shippingAddress.postalCode,
+        country: shippingAddress.country || 'India'
+      },
+      guestEmail: customer.email,
+      status: 'confirmed',
+      paymentDetails: {
+        razorpayOrderId: order_id,
+        razorpayPaymentId: payment_id,
+        amount: req.body.amount
+      },
+      note: note || 'Paid via Razorpay'
+    });
+
+    // 7. Populate order items with product details
+    await order.populate('items.productId');
+
+    res.json({ success: true, order });
   } catch (error) {
     console.error('Error handling Razorpay payment success:', error);
     res.status(500).json({ success: false, error: 'Failed to process payment/order' });

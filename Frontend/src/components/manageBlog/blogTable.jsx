@@ -73,17 +73,16 @@ const BlogTable = ({ blogs, setBlogs }) => {
 
                 {/* Status */}
                 <td className="border p-3">
-                  <span
-                    className={`px-3 py-1 text-white rounded ${
-                      blog.status === "published"
-                        ? "bg-green-500"
-                        : blog.status === "draft"
-                        ? "bg-yellow-500"
-                        : "bg-gray-500"
-                    }`}
-                  >
-                    {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
-                  </span>
+                  {(() => {
+                    const status = blog?.status || 'draft';
+                    const badgeClass = status === 'published' ? 'bg-green-500' : (status === 'draft' ? 'bg-yellow-500' : 'bg-gray-500');
+                    const text = (status[0] ? status[0].toUpperCase() : 'D') + status.slice(1);
+                    return (
+                      <span className={`px-3 py-1 text-white rounded ${badgeClass}`}>
+                        {text}
+                      </span>
+                    );
+                  })()}
                 </td>
 
                 {/* Actions with Analyze Link */}

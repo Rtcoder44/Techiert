@@ -58,6 +58,7 @@ import CheckoutFlow from './components/checkout/CheckoutFlow';
 import MyOrders from './pages/MyOrders';
 import GuestOrders from './pages/GuestOrders';
 
+
 // Spinner component
 const Spinner = () => (
   <div className="flex justify-center items-center h-screen">
@@ -201,6 +202,14 @@ const AppContent = () => {
               </PrivateRoute>
             }
           />
+          {/* <Route
+            path="/dashboard/ai-blog-generator"
+            element={
+              <AdminRoute>
+                <AiBlogGenerator />
+              </AdminRoute>
+            }
+          /> */}
 
           {/* Legal Routes */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

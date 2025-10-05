@@ -54,11 +54,10 @@ const SingleProduct = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get(`${API_BASE_URL}/api/shopify/products/handle/${handle}`);
+        const response = await axios.get(`${API_BASE_URL}/api/products/slug/${handle}`);
         const prod = response.data.product;
         if (isMounted) {
           setProduct(prod);
-          setSelectedVariant(prod.variants && prod.variants.length > 0 ? prod.variants[0] : null);
           setLoading(false); // Show product info immediately
           // Use aiContent if present
           if (prod.aiContent && prod.aiContent.trim().length > 0) {
@@ -102,22 +101,17 @@ const SingleProduct = () => {
   };
 
   const handleAddToCart = () => {
-    if (!selectedVariant) return;
-    const variantId = selectedVariant.id;
-    const price = parseFloat(
-      selectedVariant.price ||
-      product.price ||
-      0
-    );
+    const price = parseFloat(product.price || 0);
     const images = product.images || [];
     const cartPayload = {
-      variantId,
+      productId: product._id,
       product: {
         title: product.title,
         price,
         images,
-        shopifyVariantId: variantId,
-        handle: product.handle
+        affiliateUrl: product.affiliateUrl,
+        productId: product._id,
+        slug: product.slug
       },
       quantity
     };
@@ -190,19 +184,14 @@ const SingleProduct = () => {
     );
   }
 
-  const price = parseFloat(
-    selectedVariant?.price ||
-    (product.variants && product.variants[0]?.price) ||
-    product.price ||
-    0
-  );
+  const price = parseFloat(product.price || 0);
 
   // SEO tags
   const metaTitle = `${product.title} | Techiert Store`;
   const metaDescription = generatedDescription || SEO_FALLBACK_DESCRIPTION;
   const metaKeywords = product.tags ? product.tags.join(', ') : '';
   const productImage = product.images && product.images.length > 0 ? product.images[0] : '/default-product.jpg';
-  const canonicalUrl = `https://techiert.com/store/product/${product.handle}`;
+  const canonicalUrl = `https://techiert.com/store/product/${product.slug}`;
 
   return (
     <>
@@ -217,16 +206,16 @@ const SingleProduct = () => {
         <link rel="canonical" href={canonicalUrl} />
       </Helmet>
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             {/* Image Gallery */}
             <div>
-              <div className="border-4 border-blue-200 rounded-lg overflow-hidden mb-4 relative group">
+              <div className="rounded-2xl overflow-hidden mb-4 relative group ring-1 ring-gray-100 shadow-sm bg-white">
                 <img
-                  src={product.images && product.images.length > 0 ? product.images[selectedImage] : '/default-product.jpg'}
+                  src={(product.images && product.images.length > 0 ? (product.images[selectedImage]?.url || product.images[selectedImage]?.src || product.images[selectedImage]) : '/default-product.jpg')}
                   alt={product.title}
-                  className="w-full h-auto object-contain bg-white transition-transform duration-300 ease-in-out group-hover:scale-125"
-                  style={{ maxHeight: 400 }}
+                  className="w-full h-auto object-contain transition-transform duration-500 ease-in-out group-hover:scale-105"
+                  style={{ maxHeight: 460 }}
                   onError={(e) => {
                     e.target.src = '/default-product.jpg';
                   }}
@@ -237,9 +226,9 @@ const SingleProduct = () => {
                   {product.images.map((img, idx) => (
                     <img
                       key={idx}
-                      src={img}
+                      src={img?.url || img?.src || img}
                       alt={`${product.title} - Image ${idx + 1}`}
-                      className={`w-20 h-20 object-cover rounded cursor-pointer border-2 ${selectedImage === idx ? 'border-blue-500' : 'border-gray-200'}`}
+                      className={`w-20 h-20 object-cover rounded-md cursor-pointer ring-1 ${selectedImage === idx ? 'ring-blue-500' : 'ring-gray-200'} hover:ring-blue-400`}
                       onClick={() => setSelectedImage(idx)}
                       onError={(e) => {
                         e.target.src = '/default-product.jpg';
@@ -252,13 +241,13 @@ const SingleProduct = () => {
 
             {/* Product Info */}
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold mb-2 text-gray-900">{product.title}</h1>
-              <div className="mb-4 flex items-center gap-4">
-                <span className="text-3xl font-bold text-blue-600">
+              <h1 className="text-3xl lg:text-4xl font-bold mb-3 text-gray-900">{product.title}</h1>
+              <div className="mb-5 flex items-center gap-3">
+                <span className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-amber-600 bg-clip-text text-transparent">
                   {formatPrice(price)}
                 </span>
-                <span className={`text-base font-semibold ${selectedVariant?.availableForSale ? 'text-green-600' : 'text-red-600'}`}>
-                  {selectedVariant?.availableForSale ? 'In Stock' : 'Out of Stock'}
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
                 </span>
               </div>
 
@@ -283,23 +272,6 @@ const SingleProduct = () => {
 
               <p className="text-sm text-red-500 mt-2">🔥 Limited stock available – order now!</p>
 
-              {/* Variant Selector */}
-              {product.variants && product.variants.length > 1 && (
-                <div className="mb-6">
-                  <label className="block mb-1 font-medium">Choose Variant:</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {product.variants.map((variant) => (
-                      <button
-                        key={variant.id}
-                        className={`px-4 py-2 rounded border transition-colors ${selectedVariant?.id === variant.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50'}`}
-                        onClick={() => setSelectedVariant(variant)}
-                      >
-                        {variant.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Quantity Selector */}
               <div className="flex items-center gap-4 mb-8">
@@ -322,19 +294,23 @@ const SingleProduct = () => {
               </div>
 
               {/* Add to Cart / Buy Now */}
-              <div className="flex gap-4 mb-8">
+              <div className="flex gap-3 mb-8">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg font-semibold shadow"
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-lg font-semibold shadow"
                 >
                   Add to Cart
                 </button>
-                <button
-                  onClick={handleBuyNow}
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-lg font-semibold shadow"
-                >
-                  Buy Now
-                </button>
+                {product.affiliateUrl && (
+                  <a
+                    href={product.affiliateUrl}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="flex-1 px-6 py-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition text-lg font-semibold shadow text-center"
+                  >
+                    Buy on Amazon
+                  </a>
+                )}
               </div>
 
               <SocialShareButtons
@@ -352,9 +328,9 @@ const SingleProduct = () => {
           </div>
           
           {/* Details Tabs */}
-          <div className="mt-16">
+          <div className="mt-14">
             <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
+              <nav className="-mb-px flex space-x-6">
                 <TabButton isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
                   Product Overview
                 </TabButton>
@@ -425,8 +401,8 @@ const SingleProduct = () => {
 
           {/* Related Products */}
           <RelatedProducts
-            productHandle={product.handle}
-            currentProductId={product.id}
+            productSlug={product.slug}
+            currentProductId={product._id}
           />
         </div>
       </DashboardLayout>

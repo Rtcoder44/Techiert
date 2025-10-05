@@ -1,7 +1,6 @@
 const { SitemapStream, streamToPromise } = require('sitemap');
 const Product = require('../models/product.model');
 const Blog = require('../models/blogs.model');
-const shopifyService = require('../services/shopify.service'); // Import Shopify Service
 const gemini = require('../services/gemini.service'); // Import Gemini service
 const BASE_URL = 'https://techiert.com';
 
@@ -27,24 +26,25 @@ exports.generateSitemap = async (req, res) => {
     smStream.write({ url: '/store', changefreq: 'daily', priority: 0.9 });
     smStream.write({ url: '/blog', changefreq: 'weekly', priority: 0.8 });
 
-    // 1. Add Shopify Products
-    const shopifyProducts = await shopifyService.fetchProducts({ limit: 250 });
-    for (const product of shopifyProducts) {
+    // 1. Add Database Products
+    const products = await Product.find({}, 'slug title description updatedAt').lean();
+    for (const product of products) {
       let description = product.description;
-      if (product.handle && product.title) {
+      if (product.slug && product.title) {
         if (!description || description.trim().length < 20) {
           // Generate description with Gemini if missing or too short
           try {
-            description = await gemini.generateProductDetails(product.title, product.title + (product.tags ? (" " + product.tags.join(", ")) : ""));
+            description = await gemini.generateProductDetails(product.title, product.title);
           } catch (err) {
-            console.error(`Gemini failed for product ${product.handle}:`, err.message);
+            console.error(`Gemini failed for product ${product.slug}:`, err.message);
             description = 'High-quality product from Techiert.'; // fallback
           }
         }
         smStream.write({
-          url: BASE_URL + `/store/product/${product.handle}`,
+          url: BASE_URL + `/store/product/${product.slug}`,
           changefreq: 'weekly',
           priority: 0.9,
+          lastmod: product.updatedAt,
         });
       }
     }

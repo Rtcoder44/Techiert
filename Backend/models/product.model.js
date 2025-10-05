@@ -60,6 +60,10 @@ const productSchema = new mongoose.Schema({
     url: String,
     public_id: String
   }],
+  affiliateUrl: {
+    type: String,
+    default: ''
+  },
   specifications: {
     type: Map,
     of: String
@@ -103,7 +107,7 @@ productSchema.index({ updatedAt: -1 });
 
 const aiProductContentSchema = new mongoose.Schema({
   handle: { type: String, required: true, unique: true },
-  shopifyId: { type: String },
+  productId: { type: String },
   aiContent: { type: String, required: true },
 }, { timestamps: true });
 

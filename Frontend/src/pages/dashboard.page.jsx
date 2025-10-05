@@ -36,27 +36,23 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const endpoints = [
-          `${API_BASE_URL}/api/analytics/dashboard`,
-          `${API_BASE_URL}/api/blog/recent`,
-          `${API_BASE_URL}/api/products/recent`,
-        ];
+        // Adjusted endpoints to match backend
+        const analyticsReq = user?.role === 'admin'
+          ? axios.get(`${API_BASE_URL}/api/analytics`, { withCredentials: true })
+          : Promise.resolve({ data: { totalBlogs: 0, totalProducts: 0, totalViews: 0, totalSales: 0 } });
 
-        if (user) {
-          endpoints.push(`${API_BASE_URL}/api/orders/recent`);
-        }
+        const blogsReq = axios.get(`${API_BASE_URL}/api/blogs/latest`);
+        const productsReq = axios.get(`${API_BASE_URL}/api/products`, { params: { sort: 'latest', page: 1, limit: 5 } });
+        const ordersReq = user ? axios.get(`${API_BASE_URL}/api/orders`, { withCredentials: true }) : Promise.resolve({ data: { orders: [] } });
 
-        const [statsRes, blogsRes, productsRes, ...rest] = await Promise.all(
-          endpoints.map(endpoint => axios.get(endpoint))
-        );
+        const [statsRes, blogsRes, productsRes, ordersRes] = await Promise.all([
+          analyticsReq, blogsReq, productsReq, ordersReq
+        ]);
 
-        setStats(statsRes.data);
-        setRecentBlogs(blogsRes.data.blogs || []);
+        setStats(statsRes.data || { totalBlogs: 0, totalProducts: 0, totalViews: 0, totalSales: 0 });
+        setRecentBlogs(blogsRes.data.blogs || blogsRes.data || []);
         setRecentProducts(productsRes.data.products || []);
-        
-        if (rest.length > 0) {
-          setRecentOrders(rest[0].data.orders || []);
-        }
+        setRecentOrders(ordersRes.data.orders || []);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       } finally {

@@ -5,8 +5,21 @@ import ProductCard from './ProductCard';
 const ProductGrid = ({ products, loading, error, wishlist = [], onToggleWishlist, onAddToCart }) => {
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="animate-pulse bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
+            <div className="w-full pb-[75%] bg-gray-200" />
+            <div className="p-4 space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-3/4" />
+              <div className="h-3 bg-gray-200 rounded w-full" />
+              <div className="h-3 bg-gray-200 rounded w-5/6" />
+              <div className="flex justify-between items-center pt-2">
+                <div className="h-5 bg-gray-200 rounded w-20" />
+                <div className="h-9 bg-gray-200 rounded-full w-9" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -17,8 +30,9 @@ const ProductGrid = ({ products, loading, error, wishlist = [], onToggleWishlist
   }
   if (!products || products.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        No products found
+      <div className="text-center py-20 bg-white rounded-2xl ring-1 ring-gray-100">
+        <p className="text-gray-600">No products found</p>
+        <p className="text-gray-400 text-sm">Try changing filters or search term</p>
       </div>
     );
   }
@@ -29,9 +43,9 @@ const ProductGrid = ({ products, loading, error, wishlist = [], onToggleWishlist
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
         {products.map((product) => (
           <ProductCard
-            key={product.id}
+            key={product._id || product.id || product.slug || product.handle}
             product={product}
-            isWishlisted={wishlist.includes(product.id)}
+            isWishlisted={wishlist.includes(product._id || product.id)}
             onToggleWishlist={onToggleWishlist || (() => {})}
             onAddToCart={onAddToCart || (() => {})}
           />

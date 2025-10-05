@@ -2,11 +2,12 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const CurrencyContext = createContext();
 
-const BASE_CURRENCY = 'USD';
+// Store prices are saved in INR. Convert from INR -> user's currency.
+const BASE_CURRENCY = 'INR';
 const DEFAULT_CURRENCY = {
-  code: 'USD',
-  symbol: '$',
-  country: 'US',
+  code: 'INR',
+  symbol: '₹',
+  country: 'IN',
 };
 
 const currencySymbols = {
@@ -32,8 +33,8 @@ export const CurrencyProvider = ({ children }) => {
         const geoRes = await fetch('https://ipapi.co/json/');
         const geo = await geoRes.json();
 
-        const code = (geo.currency || 'USD').toUpperCase().trim();
-        const country = geo.country || 'US';
+        const code = (geo.currency || 'INR').toUpperCase().trim();
+        const country = geo.country || 'IN';
 
         setCurrency({
           code,
@@ -59,13 +60,12 @@ export const CurrencyProvider = ({ children }) => {
           throw new Error('Invalid rates data');
         }
 
-        if (!data.rates.INR) {
-          data.rates.INR = 83.5;
-        }
+        // Ensure INR base present when third-party fails
+        if (!data.rates || !data.rates.USD) data.rates.USD = 0.012; // fallback approx
 
         setRates(data.rates);
       } catch (e) {
-        setRates({ USD: 1, INR: 83.5 }); // fallback
+        setRates({ INR: 1, USD: 0.012, EUR: 0.011, GBP: 0.0095 }); // fallback
       } finally {
         setLoading(false);
       }

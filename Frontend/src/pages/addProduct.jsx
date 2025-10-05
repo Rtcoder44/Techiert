@@ -17,33 +17,18 @@ const AddProduct = () => {
   const [previewImages, setPreviewImages] = useState([]);
   const [specifications, setSpecifications] = useState([{ key: "", value: "" }]);
   
-  // New state to store categories fetched from API
-  const [categories, setCategories] = useState([]);
+  // Simple category input instead of fetching
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     price: "",
     stock: "",
-    category: "", // start empty until fetched
+    category: "", // text input (auto-created if needed)
+    affiliateUrl: "",
   });
 
-  // Fetch categories on mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/api/product-categories`);
-        setCategories(res.data);
-        if (res.data.length > 0) {
-          setFormData((prev) => ({ ...prev, category: res.data[0]._id || res.data[0].name || "" }));
-        }
-      } catch (error) {
-        console.error("Failed to fetch categories", error);
-      }
-    };
-
-    fetchCategories();
-  }, []);
+  // No fetching categories; user will input category name directly
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -97,6 +82,7 @@ const AddProduct = () => {
       formDataWithImages.append("stock", formData.stock);
       formDataWithImages.append("category", formData.category);
       formDataWithImages.append("specifications", JSON.stringify(specifications.filter(spec => spec.key && spec.value)));
+      formDataWithImages.append("affiliateUrl", formData.affiliateUrl);
 
       images.forEach((image) => {
         formDataWithImages.append("images", image);
@@ -215,23 +201,16 @@ const AddProduct = () => {
             {/* Category */}
             <div>
               <label className="block text-gray-700 font-semibold mb-2">Category</label>
-              <select
+              <input
+                type="text"
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
                 required
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {categories.length === 0 ? (
-                  <option value="">Loading categories...</option>
-                ) : (
-                  categories.map((cat) => (
-                    <option key={cat._id || cat.name} value={cat._id || cat.name}>
-                      {cat.name}
-                    </option>
-                  ))
-                )}
-              </select>
+                placeholder="Enter category name (e.g., Smartphones)"
+              />
+              <p className="text-xs text-gray-500 mt-1">If the category does not exist, it will be created automatically.</p>
             </div>
 
             {/* Specifications */}
@@ -295,6 +274,20 @@ const AddProduct = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Affiliate URL */}
+            <div>
+              <label className="block text-gray-700 font-semibold mb-2">Amazon Product URL</label>
+              <input
+                type="url"
+                name="affiliateUrl"
+                value={formData.affiliateUrl}
+                onChange={handleInputChange}
+                placeholder="https://www.amazon.in/..."
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">Used for the Buy Now button and in cart items.</p>
             </div>
 
             {/* Submit Button */}

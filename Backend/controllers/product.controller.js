@@ -1,4 +1,4 @@
-const Product = require('../models/product.model');
+const { product: Product } = require('../models/product.model');
 const ProductCategory = require('../models/productCategory.model');
 const cloudinary = require('../config/cloudinary');
 const slugify = require('slugify');
@@ -42,7 +42,7 @@ const uploadImage = async (file) => {
 // Create a new product
 exports.createProduct = async (req, res) => {
   try {
-    const { title, description, price, category, stock, specifications } = req.body;
+    const { title, description, price, category, stock, specifications, affiliateUrl } = req.body;
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, error: "Product images are required" });
@@ -60,10 +60,25 @@ exports.createProduct = async (req, res) => {
       counter++;
     }
 
-    // Validate category
-    const validCategory = await ProductCategory.findById(category);
-    if (!validCategory) {
-      return res.status(400).json({ success: false, error: "Invalid category ID" });
+    // Resolve category: accepts Mongo ID or category name; creates if missing
+    let categoryId = null;
+    if (category) {
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        const byId = await ProductCategory.findById(category);
+        if (byId) categoryId = byId._id;
+      }
+      if (!categoryId) {
+        const candidateName = String(category).trim();
+        const candidateSlug = slugify(candidateName, { lower: true, strict: true });
+        let byName = await ProductCategory.findOne({ $or: [ { slug: candidateSlug }, { name: new RegExp(`^${candidateName}$`, 'i') } ] });
+        if (!byName) {
+          byName = await ProductCategory.create({ name: candidateName, slug: candidateSlug });
+        }
+        categoryId = byName._id;
+      }
+    }
+    if (!categoryId) {
+      return res.status(400).json({ success: false, error: "Invalid category" });
     }
 
     // Process images in parallel
@@ -112,10 +127,11 @@ exports.createProduct = async (req, res) => {
       slug,
       description,
       price,
-      category,
+      category: categoryId,
       stock,
       specifications: specificationsData,
       images,
+      affiliateUrl: affiliateUrl || '',
       createdBy: req.user._id,
       aiContent,
     });
@@ -184,7 +200,7 @@ exports.getAllProducts = async (req, res) => {
         .sort(sortOptions[sortKey])
         .skip(skip)
         .limit(limit)
-        .select('title slug price images updatedAt')
+        .select('title slug price images updatedAt affiliateUrl')
         .lean(),
       Product.countDocuments(query)
     ]);
@@ -304,11 +320,10 @@ exports.updateProduct = async (req, res) => {
       { new: true, runValidators: true }
     ).populate("category");
 
-    // Clear product cache for old and new slug/handle
-    if (oldSlug) await delCache(`shopifyProduct:${oldSlug}`);
-    if (product.slug && product.slug !== oldSlug) await delCache(`shopifyProduct:${product.slug}`);
+    // Clear product cache for old and new slug
+    if (oldSlug) await delCache(`product:${oldSlug}`);
+    if (product.slug && product.slug !== oldSlug) await delCache(`product:${product.slug}`);
     // Clear product list cache
-    await delCacheByPattern('shopifyProduct:*');
     await delCacheByPattern('products:*');
     res.status(200).json({ success: true, product });
   } catch (error) {
@@ -333,10 +348,9 @@ exports.deleteProduct = async (req, res) => {
 
     await Product.findByIdAndDelete(req.params.id);
 
-    // Clear product cache for slug/handle
-    if (product.slug) await delCache(`shopifyProduct:${product.slug}`);
+    // Clear product cache for slug
+    if (product.slug) await delCache(`product:${product.slug}`);
     // Clear product list cache
-    await delCacheByPattern('shopifyProduct:*');
     await delCacheByPattern('products:*');
     res.status(200).json({
       success: true,

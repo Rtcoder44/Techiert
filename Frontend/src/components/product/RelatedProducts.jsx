@@ -6,7 +6,7 @@ import { useCurrency } from '../../context/currencyContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const RelatedProducts = ({ productHandle, currentProductId }) => {
+const RelatedProducts = ({ productSlug, currentProductId }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { formatPrice } = useCurrency();
@@ -15,8 +15,9 @@ const RelatedProducts = ({ productHandle, currentProductId }) => {
     const fetchRelatedProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/api/shopify/products/related/${productHandle}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/products`, {
           params: {
+            exclude: currentProductId,
             limit: 4
           }
         });
@@ -29,10 +30,10 @@ const RelatedProducts = ({ productHandle, currentProductId }) => {
       }
     };
 
-    if (productHandle) {
+    if (currentProductId) {
       fetchRelatedProducts();
     }
-  }, [productHandle]);
+  }, [currentProductId]);
 
   if (loading) {
     return (
@@ -61,8 +62,8 @@ const RelatedProducts = ({ productHandle, currentProductId }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {products.map((product) => (
           <Link
-            key={product.id}
-            to={`/store/product/${product.handle}`}
+            key={product._id}
+            to={`/store/product/${product.slug}`}
             className="group"
           >
             <div className="aspect-w-1 aspect-h-1 w-full rounded-lg overflow-hidden">

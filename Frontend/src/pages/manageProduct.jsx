@@ -107,8 +107,16 @@ const ManageProduct = () => {
     }
   };
 
-  const handleUpdate = (product) => {
-    setSelectedProduct(product);
+  const handleUpdate = async (product) => {
+    try {
+      // fetch full product details before opening modal
+      const { data } = await axios.get(`${API_BASE_URL}/api/products/${product._id}`);
+      const full = data?.product || product;
+      setSelectedProduct(full);
+    } catch (e) {
+      // fallback to existing product if fetch fails
+      setSelectedProduct(product);
+    }
   };
 
   const handleCloseModal = () => {

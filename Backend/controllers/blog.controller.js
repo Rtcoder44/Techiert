@@ -9,6 +9,8 @@ const jwt = require("jsonwebtoken");
 const SearchQuery = require("../models/searchQuery.model");
 const Category = require("../models/categories.model");
 const { getCache, client, setCache,delCacheByPattern } = require("../utils/redisClient");
+const cloudinary = require('../config/cloudinary');
+const { generateBlogOutline, genAI } = require('../services/gemini.service');
 
 
 exports.createBlog = async (req, res) => {
@@ -744,3 +746,168 @@ exports.updateComment = async (req, res) => {
       res.status(500).json({ error: "Failed to delete comment and replies" });
     }
   };
+
+// AI-powered blog generation endpoint
+exports.autoGenerateBlog = async (req, res) => {
+  try {
+    const { topic, metaTitle, metaDescription, tags, keywords, category, coverImage, status } = req.body;
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic is required for AI blog generation.' });
+    }
+    const generated = await generateBlogWithAI({
+      topic,
+      metaTitle,
+      metaDescription,
+      tags,
+      keywords,
+      category,
+      coverImage,
+      status,
+    });
+    return res.status(200).json({ success: true, generated });
+  } catch (error) {
+    console.error('AI Blog Generation Error:', error);
+    return res.status(500).json({ error: 'Failed to generate blog post with AI.' });
+  }
+};
+
+// Upload in-content image to Cloudinary
+exports.uploadContentImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided.' });
+    }
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'blog-content-images',
+      resource_type: 'image',
+    });
+    return res.status(200).json({ imageUrl: result.secure_url });
+  } catch (error) {
+    console.error('Content image upload error:', error);
+    return res.status(500).json({ error: 'Failed to upload content image.' });
+  }
+};
+
+// Generate outline
+exports.aiGenerateOutline = async (req, res) => {
+  try {
+    const { topic, keywords } = req.body;
+    if (!topic) return res.status(400).json({ error: 'Topic is required.' });
+    const outline = await generateBlogOutline({ topic, keywords });
+    return res.status(200).json({ outline });
+  } catch (error) {
+    console.error('AI Outline Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Generate section content
+exports.aiGenerateSection = async (req, res) => {
+  try {
+    const { topic, sectionHeading, metaTitle, metaDescription, tags, keywords } = req.body;
+    if (!topic || !sectionHeading) return res.status(400).json({ error: 'Topic and sectionHeading are required.' });
+    const sectionPrompt = `Write a detailed, humanized, SEO-optimized section for a blog post on "${topic}".\nSection: ${sectionHeading}\nKeywords: ${keywords ? keywords.join(', ') : ''}\nMeta Title: ${metaTitle}\nMeta Description: ${metaDescription}\nTags: ${tags ? tags.join(', ') : ''}\n\nRequirements:\n- Write as a real human, not AI.\n- Use examples, stories, and actionable advice.\n- Add image placeholders and links if relevant.\n- Avoid generic or repetitive content.\n- Make this section substantial and valuable.\n- Format in Markdown.\n`;
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(sectionPrompt);
+    const response = await result.response;
+    const sectionText = response.text();
+    return res.status(200).json({ sectionContent: sectionText });
+  } catch (error) {
+    console.error('AI Section Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Assemble article
+exports.aiAssembleArticle = async (req, res) => {
+  try {
+    const { sections } = req.body;
+    if (!sections || !Array.isArray(sections)) return res.status(400).json({ error: 'Sections array required.' });
+    // Simple assembly for now
+    const fullContent = sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n');
+    return res.status(200).json({ fullContent });
+  } catch (error) {
+    console.error('AI Assemble Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Humanize content
+exports.aiHumanizeContent = async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ error: 'Content required.' });
+    // TODO: Call humanizer API
+    // For now, just return original content
+    return res.status(200).json({ humanizedContent: content });
+  } catch (error) {
+    console.error('AI Humanize Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Scan content
+exports.aiScanContent = async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ error: 'Content required.' });
+    // TODO: Use Gemini/GPT to scan for humanization, plagiarism, length, images, links, SEO, etc.
+    // For now, just return dummy scan result
+    return res.status(200).json({
+      scan: {
+        humanized: true,
+        plagiarismFree: true,
+        wordCount: content.split(/\s+/).filter(Boolean).length,
+        hasImages: content.includes('IMAGE_UPLOAD_PLACEHOLDER'),
+        hasInternalLinks: content.includes('/blog/'),
+        hasExternalLinks: content.includes('http'),
+        meetsRequirements: true,
+        issues: [],
+      },
+    });
+  } catch (error) {
+    console.error('AI Scan Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Auto-improve content
+exports.aiImproveContent = async (req, res) => {
+  try {
+    const { content, issues } = req.body;
+    if (!content || !issues) return res.status(400).json({ error: 'Content and issues required.' });
+    // TODO: Use Gemini/GPT to revise content based on issues
+    // For now, just return original content
+    return res.status(200).json({ improvedContent: content });
+  } catch (error) {
+    console.error('AI Improve Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// AI Meta Generation Controller
+exports.aiGenerateMeta = async (req, res) => {
+  try {
+    const { topic, outline } = req.body;
+    // Compose a prompt for the AI
+    const prompt = `Given the topic "${topic}" and outline:\n${outline}\nGenerate:\n- A compelling meta title\n- A meta description (max 160 chars)\n- 5-10 SEO keywords (comma separated)`;
+    let metaTitle = '', metaDescription = '', keywords = '';
+    try {
+      // Use your AI service here (replace with your actual call)
+      // Example: const aiResult = await genAI(prompt);
+      // For demo, use dummy values:
+      metaTitle = `Meta Title for ${topic}`;
+      metaDescription = `Meta description for ${topic}...`;
+      keywords = topic.split(' ').join(', ');
+    } catch (aiErr) {
+      // Fallback if AI fails
+      metaTitle = topic;
+      metaDescription = outline ? outline.slice(0, 150) : topic;
+      keywords = topic.split(' ').join(', ');
+    }
+    res.json({ metaTitle, metaDescription, keywords });
+  } catch (error) {
+    console.error('AI meta generation error:', error);
+    res.status(500).json({ error: 'Failed to generate meta fields' });
+  }
+};

@@ -28,30 +28,40 @@ app.use(cookieParser());
 app.use(compression());
 app.use(helmet());
 
-// Allowed CORS origins
 const allowedOrigins = [
-  "http://localhost:5173",
-  "https://techiert.vercel.app",
-  "https://techiert.com",
-  "https://www.techiert.com"
+  'http://localhost:5173', // local frontend
+  'https://your-production-frontend.com', // your production frontend (replace with your real domain)
+  // Add more allowed origins as needed
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log(`❌ CORS Error: Origin ${origin} is not allowed`);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-};
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+  // Allow public GET requests. If an Origin is present and recognized, echo it back to support credentials.
+  if (req.method === 'GET' && !req.path.startsWith('/api/auth') && !req.path.startsWith('/api/admin')) {
+    if (origin && allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
+    res.header('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    return next();
+  }
+
+  // For API/auth/admin routes (needs credentials), allow only specific origins
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Import Routes
 const authRoute = require("./routes/auth.route");
@@ -64,7 +74,6 @@ const productCategoryRoutes = require("./routes/productCategory.route");
 const cartRoutes = require("./routes/cart.routes");
 const addressRoutes = require("./routes/address.routes");
 const orderRoutes = require("./routes/order.routes");
-const shopifyRoutes = require('./routes/shopify.routes');
 const geminiRoutes = require('./routes/gemini.routes');
 const sitemapRoutes = require('./routes/sitemap.routes');
 
@@ -79,7 +88,6 @@ app.use("/api/product-categories", productCategoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/orders", orderRoutes);
-app.use('/api/shopify', shopifyRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/', sitemapRoutes);
 

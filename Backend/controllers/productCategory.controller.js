@@ -30,7 +30,7 @@ exports.createCategory = async (req, res) => {
 exports.getAllCategories = async (req, res) => {
   try {
     const categories = await ProductCategory.find().sort({ createdAt: -1 });
-    res.status(200).json(categories);
+    res.status(200).json({ categories });
   } catch (error) {
     console.error('Fetch Categories Error:', error);
     res.status(500).json({ message: 'Server error while fetching categories.' });

@@ -7,8 +7,6 @@ const {
   getOrderById,
   createGuestOrder,
   getGuestOrderByNumber,
-  getShopifyOrders,
-  getShopifyOrderByNumber,
   createRazorpayOrder,
   handleRazorpaySuccess
 } = require('../controllers/order.controller');
@@ -22,9 +20,6 @@ router.get('/orders/:id', authMiddleware, getOrderById);
 router.post('/guest-orders', createGuestOrder);
 router.get('/guest-orders/:orderNumber', getGuestOrderByNumber);
 
-// Shopify order routes
-router.get('/shopify-orders', authMiddleware, getShopifyOrders);
-router.get('/shopify-orders/track/:orderNumber', getShopifyOrderByNumber);
 
 // Razorpay INR payment routes
 router.post('/razorpay/create', createRazorpayOrder);

@@ -11,6 +11,8 @@ const searchController = require("../controllers/searchController");
 const createRateLimiter = require("../utils/rateLimiter");
 const sharp = require("sharp"); // Import sharp for image manipulation
 const { setCache, getCache } = require("../utils/redisClient");
+const { autoGenerateBlog, aiGenerateOutline, aiGenerateSection, aiAssembleArticle, aiHumanizeContent, aiScanContent, aiImproveContent, aiGenerateMeta } = require('../controllers/blog.controller');
+const multer = require('../middlewares/multer');
 
 const router = express.Router();
 
@@ -113,5 +115,25 @@ router.post("/:id/like", authMiddleware, likeLimiter, blogController.likeBlog);
 router.post("/:id/comment", authMiddleware, commentLimiter, blogController.commentOnBlog);
 router.put("/comments/:commentId", authMiddleware, isAdminOrOwner, blogController.updateComment);
 router.delete("/comments/:commentId", authMiddleware, isAdminOrOwner, blogController.deleteComment);
+
+// 📌 Auto-Generate Route (Authentication Required)
+router.post('/auto-generate', autoGenerateBlog);
+
+// Upload in-content image
+router.post('/upload-content-image', multer.single('contentImage'), blogController.uploadContentImage);
+
+// New POST routes
+router.post('/ai-outline', aiGenerateOutline);
+router.post('/ai-section', aiGenerateSection);
+router.post('/ai-assemble', aiAssembleArticle);
+router.post('/ai-humanize', aiHumanizeContent);
+router.post('/ai-scan', aiScanContent);
+router.post('/ai-improve', aiImproveContent);
+
+// AI Blog creation via JSON (no multer)
+router.post("/ai-create", authMiddleware, blogController.createBlog);
+
+// AI Meta generation
+router.post('/ai-meta', aiGenerateMeta);
 
 module.exports = router;

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaTrash } from 'react-icons/fa';
 import DashboardLayout from '../dashboard/dashboardLayout';
-import { removeFromGuestCart, updateGuestCartItemQuantity, createShopifyCheckout } from '../../redux/slices/cartSlice';
+import { removeFromGuestCart, updateGuestCartItemQuantity } from '../../redux/slices/cartSlice';
 import { useAuth } from '../../context/authContext';
 import { showNotification } from '../../utils/notification';
 import LoginGuestModal from '../checkout/LoginGuestModal';
@@ -47,17 +47,8 @@ const Cart = () => {
       setShowLoginModal(true);
       return;
     }
-    try {
-      const result = await dispatch(createShopifyCheckout({ items: items.map(item => ({ variantId: item.variantId, quantity: item.quantity })) })).unwrap();
-      if (result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
-      } else {
-        showNotification.error('No checkout URL returned');
-      }
-    } catch (error) {
-      showNotification.error('Failed to initiate checkout');
-      console.error(error);
-    }
+    // For logged-in users, proceed to checkout flow
+    setShowCheckout(true);
   };
 
   return (
@@ -89,7 +80,12 @@ const Cart = () => {
                     >
                       <div className="flex items-center flex-1">
                         <img
-                          src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/default-product.jpg'}
+                          src={(() => {
+                            const first = (item.product.images && item.product.images.length > 0) ? item.product.images[0] : null;
+                            if (!first) return '/default-product.jpg';
+                            if (typeof first === 'string') return first;
+                            return first.url || first.src || '/default-product.jpg';
+                          })()}
                           alt={item.product.title}
                           className="w-20 h-20 object-cover rounded"
                         />
@@ -150,20 +146,21 @@ const Cart = () => {
                       </span>
                     </div>
                   </div>
-                  {currency.code === 'INR' ? (
-                    <button
-                      onClick={() => setShowCheckout(true)}
-                      className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Proceed to Checkout (INR)
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleProceedToCheckout}
-                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Proceed to Checkout
-                    </button>
+                  {/* Checkout disabled for affiliate flow */}
+                  {items.length > 0 && (
+                    <div className="space-y-2">
+                      {items.map((item) => (
+                        <a
+                          key={item.variantId}
+                          href={item.product?.affiliateUrl || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow"
+                          className={`w-full block text-center py-2 px-4 rounded-md ${item.product?.affiliateUrl ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+                        >
+                          {item.product?.affiliateUrl ? 'Buy this item on Amazon' : 'Amazon link not available'}
+                        </a>
+                      ))}
+                    </div>
                   )}
                   <button
                     onClick={() => navigate('/store')}
@@ -182,17 +179,7 @@ const Cart = () => {
           onClose={() => setShowLoginModal(false)}
           onContinueAsGuest={async () => {
             setShowLoginModal(false);
-            try {
-              const result = await dispatch(createShopifyCheckout({ items: items.map(item => ({ variantId: item.variantId, quantity: item.quantity })) })).unwrap();
-              if (result.checkoutUrl) {
-                window.location.href = result.checkoutUrl;
-              } else {
-                showNotification.error('No checkout URL returned');
-              }
-            } catch (error) {
-              showNotification.error('Failed to initiate checkout');
-              console.error(error);
-            }
+            setShowCheckout(true);
           }}
         />
 
