@@ -26,7 +26,10 @@ app.use(canonicalRedirect);
 app.use(express.json());
 app.use(cookieParser());
 app.use(compression());
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 
 const allowedOrigins = [
   'http://localhost:5173', // local frontend
@@ -34,12 +37,27 @@ const allowedOrigins = [
   'https://www.techiert.com',
 ];
 
+const isAllowedOrigin = (origin = '') => {
+  if (!origin) return false;
+  try {
+    const url = new URL(origin);
+    const host = url.host.toLowerCase();
+    return (
+      allowedOrigins.includes(origin) ||
+      host === 'techiert.com' ||
+      host === 'www.techiert.com'
+    );
+  } catch {
+    return false;
+  }
+};
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
   // Allow public GET requests. If an Origin is present and recognized, echo it back to support credentials.
   if (req.method === 'GET' && !req.path.startsWith('/api/auth') && !req.path.startsWith('/api/admin')) {
-    if (origin && allowedOrigins.includes(origin)) {
+    if (origin && isAllowedOrigin(origin)) {
       res.header('Access-Control-Allow-Origin', origin);
       res.header('Access-Control-Allow-Credentials', 'true');
     } else {
@@ -52,7 +70,7 @@ app.use((req, res, next) => {
   }
 
   // For API/auth/admin routes (needs credentials), allow only specific origins
-  if (origin && allowedOrigins.includes(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');

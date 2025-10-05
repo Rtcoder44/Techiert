@@ -25,6 +25,12 @@ const upload = require("../middlewares/multer");
 
 const router = express.Router();
 
+// Explicit OPTIONS handler for CORS preflight on auth endpoints
+router.options('*', (req, res) => {
+  res.setHeader('Access-Control-Max-Age', '86400');
+  return res.sendStatus(200);
+});
+
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 contact requests
