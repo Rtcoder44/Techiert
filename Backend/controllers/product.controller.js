@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const { setCache, getCache, delCache, delCacheByPattern } = require('../utils/redisClient');
 const { generateProductDetails } = require('../services/gemini.service');
 
-// Optimized image upload function
+// Optimized image upload function (handles local files only)
 const uploadImage = async (file) => {
   try {
     const result = await cloudinary.uploader.upload(file.path, {
@@ -37,6 +37,19 @@ const uploadImage = async (file) => {
     console.error('Error uploading image:', error);
     throw new Error('Image upload failed');
   }
+};
+
+// Normalize file from multer-storage-cloudinary (already uploaded)
+const normalizeCloudinaryFile = (file) => {
+  // When using CloudinaryStorage, file.path is the secure URL and file.filename is public_id
+  if (file && file.path && /^https?:\/\//.test(file.path)) {
+    return {
+      public_id: file.filename || file.public_id || '',
+      url: file.path,
+      thumbnail: file.path,
+    };
+  }
+  return null;
 };
 
 // Create a new product
@@ -81,9 +94,17 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid category" });
     }
 
-    // Process images in parallel
-    const imagePromises = req.files.map(file => uploadImage(file));
-    const images = await Promise.all(imagePromises);
+    // Process images: if using CloudinaryStorage, files already uploaded
+    let images = [];
+    if (Array.isArray(req.files)) {
+      const fromStorage = req.files.map(normalizeCloudinaryFile).filter(Boolean);
+      if (fromStorage.length > 0) {
+        images = fromStorage;
+      } else {
+        const imagePromises = req.files.map(file => uploadImage(file));
+        images = await Promise.all(imagePromises);
+      }
+    }
 
     // Handle specifications
     let specificationsData = {};
