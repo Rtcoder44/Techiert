@@ -30,8 +30,8 @@ app.use(helmet());
 
 const allowedOrigins = [
   'http://localhost:5173', // local frontend
-  'https://your-production-frontend.com', // your production frontend (replace with your real domain)
-  // Add more allowed origins as needed
+  'https://techiert.com',
+  'https://www.techiert.com',
 ];
 
 app.use((req, res, next) => {
@@ -47,11 +47,12 @@ app.use((req, res, next) => {
     }
     res.header('Access-Control-Allow-Methods', 'GET,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
     return next();
   }
 
   // For API/auth/admin routes (needs credentials), allow only specific origins
-  if (allowedOrigins.includes(origin)) {
+  if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
